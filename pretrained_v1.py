@@ -82,7 +82,7 @@ if __name__ == "__main__":
     model = PretrainedCNN.load_resnet18(num_classes=num_classes)  
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    accuracy_metric = torchmetrics.Accuracy(task="multiclass", num_classes=num_classes)
+    accuracy_metric = torchmetrics.Accuracy(task="multiclass", num_classes=num_classes) #TODO find out if this is correct
 
     # TensorBoard writer
     writer = SummaryWriter('runs/cifar10_experiment')
@@ -101,8 +101,8 @@ if __name__ == "__main__":
             test_loss /= len(test_loader.dataset)
             test_accuracy = accuracy_metric.compute().item()
             print(f'Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.4f}')
-    writer.add_scalar('Test/Loss', test_loss, 0)
-    writer.add_scalar('Test/Accuracy', test_accuracy, 0)
+            writer.add_scalar('Test/Loss', test_loss, 0)
+            writer.add_scalar('Test/Accuracy', test_accuracy, 0)
     writer.close()
 
 

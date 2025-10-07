@@ -98,11 +98,11 @@ if __name__ == "__main__":
             test_loss += loss.item() * images.size(0)
             preds = torch.argmax(outputs, dim=1)
             accuracy_metric.update(preds, labels)
-            test_loss /= len(test_loader.dataset)
+            test_loss /= len(test_loader.dataset) #this somehow makes no sense
             test_accuracy = accuracy_metric.compute().item()
-            print(f'Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.4f}')
-            writer.add_scalar('Test/Loss', test_loss, 0)
-            writer.add_scalar('Test/Accuracy', test_accuracy, 0)
+    print(f'Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.4f}')
+    writer.add_scalar('Test/Loss', test_loss, 0)
+    writer.add_scalar('Test/Accuracy', test_accuracy, 0)
     writer.close()
 
 

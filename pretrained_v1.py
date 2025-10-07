@@ -2,17 +2,41 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchmetrics
-from torchvision import datasets, models
+from torchvision import models
 from torchvision.models import ResNet18_Weights
 from torchvision import transforms as T
 from torch.utils.tensorboard import SummaryWriter
+import matplotlib.pyplot as plt
+import numpy as np
+from torchvision.datasets import CIFAR10
+import ssl
 
+#to open tensorboard put in command line:
+#tensorboard --logdir runs
 
+# Workaround for SSL certificate issues on some systems
+# "certificate verify failed: unable to get local issuer certificate"
+# Use certifi's CA bundle as a safe fallback when available.
+try:
+    import certifi
+    _ssl_ctx = ssl.create_default_context(cafile=certifi.where())
+    # urllib and other stdlib modules use ssl._create_default_https_context to
+    # build HTTPS contexts. Overriding it ensures downloads validate using
+    # certifi's CA bundle when available.
+    ssl._create_default_https_context = lambda: _ssl_ctx
+except Exception:
+    # If certifi isn't installed or something fails, leave the default
+    # context unchanged. The recommended fix then is to install certifi or
+    # run the system-specific certificate installer (e.g. the
+    # "Install Certificates.command" that ships with some Python installers
+    # on macOS).
+    pass
 
 class PretrainedCNN(nn.Module):
-    def __init__(self, num_classes=10):
-        super(PretrainedCNN, self).__init__()
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
+    '''A simple CNN model for CIFAR-10 classification with an option to load a pretrained ResNet18 model.'''
+    def __init__(self, num_classes=10): # variables should be defined outside of class
+        super(PretrainedCNN, self).__init__() 
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1) # input channels, output channels, kernel size, padding TODO: talk about values
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
         self.fc1 = nn.Linear(64 * 8 * 8, 128) # adjust depending on input image size
@@ -45,10 +69,11 @@ if __name__ == "__main__":
         T.ToTensor(),
         T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
-    
+
     # Load CIFAR-10 dataset to test pretrained model
 
-    test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
+    test_dataset = CIFAR10(root='./data', train=False, download=True, transform=transform)  
+
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
 
 
@@ -79,6 +104,8 @@ if __name__ == "__main__":
     writer.add_scalar('Test/Loss', test_loss, 0)
     writer.add_scalar('Test/Accuracy', test_accuracy, 0)
     writer.close()
+
+
 
 
 

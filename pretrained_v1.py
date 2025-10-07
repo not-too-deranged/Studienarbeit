@@ -4,16 +4,13 @@ import torch.optim as optim
 import torchmetrics
 from torchvision import datasets, models
 from torchvision import transforms as T
-from torch.utils.data import DataLoader
-#from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
-from torchsummary import summary
 import matplotlib.pyplot as plt
 import numpy as np
 
-class SimpleCNN(nn.Module):
+class PretrainedCNN(nn.Module):
     def __init__(self, num_classes=10):
-        super(SimpleCNN, self).__init__()
+        super(PretrainedCNN, self).__init__()
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
@@ -48,16 +45,11 @@ if __name__ == "__main__":
         T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
-    # Load CIFAR-10 dataset
-    train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
-    test_dataset = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # Initialize model, loss function, optimizer, and metrics
-    model = SimpleCNN(num_classes=num_classes)
-    # model = SimpleCNN.load_resnet18(num_classes=num_classes)  # Uncomment to use ResNet18
+
+    model = PretrainedCNN.load_resnet18(num_classes=num_classes)  # Uncomment to use ResNet18
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     accuracy_metric = torchmetrics.Accuracy().to('cpu')

@@ -6,8 +6,8 @@ from torchvision import datasets, models
 from torchvision.models import ResNet18_Weights
 from torchvision import transforms as T
 from torch.utils.tensorboard import SummaryWriter
-import matplotlib.pyplot as plt
-import numpy as np
+
+
 
 class PretrainedCNN(nn.Module):
     def __init__(self, num_classes=10):
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     model = PretrainedCNN.load_resnet18(num_classes=num_classes)  
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    accuracy_metric = torchmetrics.Accuracy().to('cpu')
+    accuracy_metric = torchmetrics.Accuracy(task="multiclass", num_classes=num_classes)
 
     # TensorBoard writer
     writer = SummaryWriter('runs/cifar10_experiment')
@@ -73,26 +73,13 @@ if __name__ == "__main__":
             test_loss += loss.item() * images.size(0)
             preds = torch.argmax(outputs, dim=1)
             accuracy_metric.update(preds, labels)
-    test_loss /= len(test_loader.dataset)
-    test_accuracy = accuracy_metric.compute().item()
-    print(f'Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.4f}')
+            test_loss /= len(test_loader.dataset)
+            test_accuracy = accuracy_metric.compute().item()
+            print(f'Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.4f}')
     writer.add_scalar('Test/Loss', test_loss, 0)
     writer.add_scalar('Test/Accuracy', test_accuracy, 0)
     writer.close()
 
-    # Visualize some predictions
-    dataiter = iter(test_loader)
-    images, labels = dataiter.next()
-    outputs = model(images)
-    _, preds = torch.max(outputs, 1)
-    fig = plt.figure(figsize=(12, 6))
-    for idx in range(8):
-        ax = fig.add_subplot(2, 4, idx+1, xticks=[], yticks=[])
-        img = images[idx] / 2 + 0.5  # unnormalize
-        npimg = img.numpy()
-        plt.imshow(np.transpose(npimg, (1, 2, 0)))
-        ax.set_title(f'Pred: {preds[idx].item()}')
-    plt.show()
 
 
 

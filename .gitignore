@@ -11,4 +11,4 @@ bin
 include
 .venv/lib
 .venv/bin
-runs/cifar10_experiment/
+runs/cifar10_pretrained/

@@ -71,11 +71,11 @@ if __name__ == "__main__":
     writer = SummaryWriter('runs/cifar10_pretrained/' + datetime.now().strftime("%Y%m%d-%H%M%S"))
 
     # Evaluation loop
-    for epoch in range(num_epochs):
-        model.eval()
-        val_accuracy = 0.0
+    model.eval()
+    with torch.no_grad():
         running_loss = 0.0
-        with torch.no_grad():
+        val_accuracy = 0.0
+        for epoch in range(num_epochs):
             for i, (inputs, labels) in enumerate(test_loader):
                 outputs = model(inputs)
                 loss = criterion(outputs, labels)
@@ -83,14 +83,16 @@ if __name__ == "__main__":
                 _, predicted = torch.max(outputs.data, 1)
                 val_accuracy += accuracy_metric(predicted, labels).item()
 
-        val_accuracy /= len(test_loader)
-        avg_loss = running_loss / len(test_loader)
-        writer.add_scalar('Validation Loss', avg_loss, epoch)
-        writer.add_scalar('Validation Accuracy', val_accuracy, epoch)
+            avg_loss = running_loss / len(test_loader)
+            val_accuracy /= len(test_loader)
+            writer.add_scalar('Validation Loss', avg_loss, epoch)
+            writer.add_scalar('Validation Accuracy', val_accuracy, epoch)
 
-        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}, Validation Accuracy: {val_accuracy:.4f}')
-
+            print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}, Validation Accuracy: {val_accuracy:.4f}')
+            running_loss = 0.0
+            val_accuracy = 0.0
     writer.close()
+    
 
 
 

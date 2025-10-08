@@ -1,3 +1,4 @@
+from datetime import datetime
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     accuracy_metric = torchmetrics.Accuracy(task="multiclass", num_classes=10)
 
     # TensorBoard writer
-    writer = SummaryWriter('runs/self_trained_cnn_experiment')
+    writer = SummaryWriter('runs/cifar10_selftrained/' + datetime.now().strftime("%Y%m%d-%H%M%S"))
 
     # Training loop
     for epoch in range(num_epochs):

@@ -9,28 +9,11 @@ from torch.utils.tensorboard import SummaryWriter
 import matplotlib.pyplot as plt
 import numpy as np
 from torchvision.datasets import CIFAR10
-import ssl
+from datetime import datetime
+
 
 #to open tensorboard put in command line:
 #tensorboard --logdir runs
-
-# Workaround for SSL certificate issues on some systems
-# "certificate verify failed: unable to get local issuer certificate"
-# Use certifi's CA bundle as a safe fallback when available.
-try:
-    import certifi
-    _ssl_ctx = ssl.create_default_context(cafile=certifi.where())
-    # urllib and other stdlib modules use ssl._create_default_https_context to
-    # build HTTPS contexts. Overriding it ensures downloads validate using
-    # certifi's CA bundle when available.
-    ssl._create_default_https_context = lambda: _ssl_ctx
-except Exception:
-    # If certifi isn't installed or something fails, leave the default
-    # context unchanged. The recommended fix then is to install certifi or
-    # run the system-specific certificate installer (e.g. the
-    # "Install Certificates.command" that ships with some Python installers
-    # on macOS).
-    pass
 
 class PretrainedCNN(nn.Module):
     '''A simple CNN model for CIFAR-10 classification with an option to load a pretrained ResNet18 model.'''
@@ -58,7 +41,7 @@ class PretrainedCNN(nn.Module):
 
 if __name__ == "__main__":
     # Hyperparameters to be tuned
-    num_epochs = 5
+    num_epochs = 10
     batch_size = 64
     learning_rate = 0.001
     num_classes = 10
@@ -85,28 +68,30 @@ if __name__ == "__main__":
     accuracy_metric = torchmetrics.Accuracy(task="multiclass", num_classes=num_classes) #TODO find out if this is correct
 
     # TensorBoard writer
-    writer = SummaryWriter('runs/cifar10_experiment')
+    writer = SummaryWriter('runs/cifar10_pretrained/' + datetime.now().strftime("%Y%m%d-%H%M%S"))
 
     # Evaluation loop
-    model.eval()
-    test_loss = 0.0
-    accuracy_metric.reset()
-    with torch.no_grad():
-        for images, labels in test_loader:
-            outputs = model(images)
-            loss = criterion(outputs, labels)
-            test_loss += loss.item() * images.size(0)
-            preds = torch.argmax(outputs, dim=1)
-            accuracy_metric.update(preds, labels)
-            test_loss /= len(test_loader.dataset) #this somehow makes no sense
-            test_accuracy = accuracy_metric.compute().item()
-    print(f'Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.4f}')
-    writer.add_scalar('Test/Loss', test_loss, 0)
-    writer.add_scalar('Test/Accuracy', test_accuracy, 0)
+    for epoch in range(num_epochs):
+        model.eval()
+        val_accuracy = 0.0
+        running_loss = 0.0
+        with torch.no_grad():
+            for i, (inputs, labels) in enumerate(test_loader):
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                loss.backward()
+                running_loss += loss.item()
+                _, predicted = torch.max(outputs.data, 1)
+                val_accuracy += accuracy_metric(predicted, labels).item()
+
+        val_accuracy /= len(test_loader)
+        avg_loss = running_loss / len(test_loader)
+        writer.add_scalar('Validation Loss', avg_loss, epoch)
+        writer.add_scalar('Validation Accuracy', val_accuracy, epoch)
+
+        print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}, Validation Accuracy: {val_accuracy:.4f}')
+
     writer.close()
-
-
-
 
 
 

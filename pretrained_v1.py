@@ -79,7 +79,6 @@ if __name__ == "__main__":
             for i, (inputs, labels) in enumerate(test_loader):
                 outputs = model(inputs)
                 loss = criterion(outputs, labels)
-                loss.backward()
                 running_loss += loss.item()
                 _, predicted = torch.max(outputs.data, 1)
                 val_accuracy += accuracy_metric(predicted, labels).item()

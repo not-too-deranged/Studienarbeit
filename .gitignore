@@ -12,3 +12,9 @@ include
 .venv/lib
 .venv/bin
 runs/cifar10_pretrained/
+/checkpoints/
+/data/
+/models/
+/tensorboard_logs/
+/lightning_logs/
+/.idea/

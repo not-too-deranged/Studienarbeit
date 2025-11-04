@@ -27,14 +27,13 @@ def main():
     BATCH_SIZE  = model_options.BATCH_SIZE
     INITIAL_LR = model_options.INITIAL_LR
     NUM_EPOCHS = model_options.NUM_EPOCHS
-    MAX_EPOCHS_LR_FINDER = 3
-    PATIENCE = 5  # early stopping patience
-    NUM_WORKERS = 4
-    PADDING = 4  # for random crop
-    INPUT_SIZE = 224  # EfficientNet minimum input size
-    LOGGING_STEPS = 10
-    WEIGHT_DECAY = 1e-4
-    DROPOUT_RATE = 0.2
+    MAX_EPOCHS_LR_FINDER = model_options.MAX_EPOCHS_LR_FINDER
+    PATIENCE = model_options.PATIENCE
+    NUM_WORKERS = model_options.NUM_WORKERS
+    PADDING = model_options.PADDING
+    INPUT_SIZE = model_options.INPUT_SIZE
+    LOGGING_STEPS = model_options.LOGGING_STEPS
+ 
 
     # ============================================================
     # DATA PREPARATION

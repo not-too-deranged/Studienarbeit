@@ -11,10 +11,27 @@ from lightning.pytorch.utilities.model_summary import ModelSummary
 from torch.utils.data import DataLoader
 import torchvision
 import torchvision.transforms as transforms
-from torch.utils.tensorboard import SummaryWriter
 from torchvision import models
-import tensorboard
-from tqdm import tqdm
+
+import ssl
+
+# Workaround for SSL certificate issues on some systems
+# "certificate verify failed: unable to get local issuer certificate"
+# Use certifi's CA bundle as a safe fallback when available.
+try:
+    import certifi
+    _ssl_ctx = ssl.create_default_context(cafile=certifi.where())
+    # urllib and other stdlib modules use ssl._create_default_https_context to
+    # build HTTPS contexts. Overriding it ensures downloads validate using
+    # certifi's CA bundle when available.
+    ssl._create_default_https_context = lambda: _ssl_ctx
+except Exception:
+    # If certifi isn't installed or something fails, leave the default
+    # context unchanged. The recommended fix then is to install certifi or
+    # run the system-specific certificate installer (e.g. the
+    # "Install Certificates.command" that ships with some Python installers
+    # on macOS).
+    pass
 
 torch.set_float32_matmul_precision('high')
 
@@ -60,7 +77,7 @@ class EfficientNetLightning(LightningModule):
         preds = torch.argmax(outputs, dim=1)
         acc = self.train_acc(preds, labels)
 
-        self.log('loss/train',loss, prog_bar=True)
+        self.log('loss/train', loss, prog_bar=True)
         self.log('acc/train', acc, prog_bar=True)
 
         return loss
@@ -79,12 +96,12 @@ class EfficientNetLightning(LightningModule):
         return loss
 
     def test_step(self, batch, batch_idx):
-        """Defines a single validation iteration."""
+        """Defines a single test iteration."""
         images, labels = batch
         outputs = self(images)
         loss = self.criterion(outputs, labels)
         preds = torch.argmax(outputs, dim=1)
-        acc = self.val_acc(preds, labels)
+        acc = self.test_acc(preds, labels)
 
         self.log('loss/test', loss, prog_bar=True)
         self.log('acc/test', acc, prog_bar=True)
@@ -110,14 +127,14 @@ class EfficientNetLightning(LightningModule):
 # HYPERPARAMETERS AND DEVICE
 # ============================================================
 
-#Used device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Force CPU for compatibility with freeze support
+device = torch.device("cpu")
 
-#Hyperparameters
+# Hyperparameters
 batch_size = 64
 initial_lr = 1e-3
 num_epochs = 50
-patience = 5     # early stopping patience
+patience = 5  # early stopping patience
 
 # ============================================================
 # DATA PREPARATION
@@ -162,24 +179,25 @@ test_dataset = torchvision.datasets.CIFAR100(
 )
 
 # DataLoaders allow batching and shuffling
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
-val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
-test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
+# Set num_workers=0 for compatibility with freeze support (e.g., PyInstaller executables)
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
+val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
 
 # ============================================================
 # LOGGING AND CALLBACKS
 # ============================================================
 
-#Lightning handles TensorBoard automatically; no manual SummaryWriter needed
+# Lightning handles TensorBoard automatically; no manual SummaryWriter needed
 run_name = f"b{batch_size}_lr{initial_lr:.0e}"
 tb_logger = loggers.TensorBoardLogger(save_dir="lightning_logs", name=run_name)
 
-#Early stopping monitors validation loss
+# Early stopping monitors validation loss
 early_stop_callback = EarlyStopping(
     monitor="loss/val", mode="min", patience=patience, verbose=True
 )
 
-#Save best checkpoint by validation loss
+# Save best checkpoint by validation loss
 checkpoint_callback = ModelCheckpoint(
     dirpath="./checkpoints",
     filename="best_model",
@@ -188,13 +206,12 @@ checkpoint_callback = ModelCheckpoint(
     mode="min"
 )
 
-
 # ============================================================
 # INITIAL TRAINER FOR LR FINDER
 # ============================================================
 # We use a shorter trainer here so LR finder doesn't train for long.
 trainer = Trainer(
-    accelerator="auto",
+    accelerator="cpu",  # Force CPU
     max_epochs=3,  # only a few for lr finder
     logger=tb_logger,
 )
@@ -205,11 +222,11 @@ model = EfficientNetLightning(learning_rate=initial_lr)
 # ============================================================
 # AUTOMATIC LEARNING RATE FINDING
 # ============================================================
-print("\n Running learning rate finder...")
+print("\nRunning learning rate finder...")
 tuner = Tuner(trainer)
 lr_finder = tuner.lr_find(model, train_dataloaders=train_loader, val_dataloaders=val_loader, min_lr=1e-5, max_lr=1e-1)
 
-#Automatically select the suggested LR
+# Automatically select the suggested LR
 new_lr = lr_finder.suggestion()
 print(f"Suggested learning rate: {new_lr:.2e}")
 model.hparams.learning_rate = new_lr
@@ -219,13 +236,13 @@ model.hparams.learning_rate = new_lr
 # ============================================================
 trainer = Trainer(
     max_epochs=num_epochs,
-    accelerator="auto",
+    accelerator="cpu",  # Force CPU
     callbacks=[early_stop_callback, checkpoint_callback],
     logger=tb_logger,
     log_every_n_steps=10,
 )
 
-print("\n Starting training with tuned learning rate...")
+print("\nStarting training with tuned learning rate...")
 trainer.fit(model, train_loader, val_loader)
 
 # ============================================================
@@ -233,11 +250,11 @@ trainer.fit(model, train_loader, val_loader)
 # ============================================================
 
 torch.save(model.state_dict(), "./models/efficientnet_cifar100.pth")
-print("? Model saved to './models/efficientnet_cifar100.pth'")
+print("Model saved to './models/efficientnet_cifar100.pth'")
 
 # ============================================================
 # TEST BEST MODEL
 # ============================================================
 
-#print("\n Testing best saved model on test data...")
-#trainer.test(model, dataloaders=test_loader)
+print("\nTesting best saved model on test data...")
+trainer.test(model, dataloaders=test_loader)

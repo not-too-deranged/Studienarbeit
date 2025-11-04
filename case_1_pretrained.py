@@ -12,28 +12,7 @@ from torch.utils.data import DataLoader
 import torchvision
 import torchvision.transforms as transforms
 from torchvision import models
-
-import ssl
-
-# Workaround for SSL certificate issues on some systems
-# "certificate verify failed: unable to get local issuer certificate"
-# Use certifi's CA bundle as a safe fallback when available.
-try:
-    import certifi
-    _ssl_ctx = ssl.create_default_context(cafile=certifi.where())
-    # urllib and other stdlib modules use ssl._create_default_https_context to
-    # build HTTPS contexts. Overriding it ensures downloads validate using
-    # certifi's CA bundle when available.
-    ssl._create_default_https_context = lambda: _ssl_ctx
-except Exception:
-    # If certifi isn't installed or something fails, leave the default
-    # context unchanged. The recommended fix then is to install certifi or
-    # run the system-specific certificate installer (e.g. the
-    # "Install Certificates.command" that ships with some Python installers
-    # on macOS).
-    pass
-
-torch.set_float32_matmul_precision('high')
+import multiprocessing
 
 class EfficientNetLightning(LightningModule):
     """
@@ -127,134 +106,141 @@ class EfficientNetLightning(LightningModule):
 # HYPERPARAMETERS AND DEVICE
 # ============================================================
 
-# Force CPU for compatibility with freeze support
-device = torch.device("cpu")
+def run_training():
 
-# Hyperparameters
-batch_size = 64
-initial_lr = 1e-3
-num_epochs = 50
-patience = 5  # early stopping patience
+    # Hyperparameters
+    batch_size = 64
+    initial_lr = 1e-3
+    num_epochs = 50
+    patience = 5  # early stopping patience
 
-# ============================================================
-# DATA PREPARATION
-# ============================================================
+    # ============================================================
+    # DATA PREPARATION
+    # ============================================================
 
-"""
-CIFAR-100 consists of 60,000 32x32 color images in 100 classes,
-with 600 images per class. There are 50,000 training and 10,000 test images.
-"""
-transform_train = transforms.Compose([
-    transforms.Resize(224),  # EfficientNet expects at least 224x224 inputs
-    transforms.RandomHorizontalFlip(),
-    transforms.RandomCrop(224, padding=4),
-    transforms.ToTensor(),
-    transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],  # ImageNet mean
-        std=[0.229, 0.224, 0.225]    # ImageNet std
-    ),
-])
+    """
+    CIFAR-100 consists of 60,000 32x32 color images in 100 classes,
+    with 600 images per class. There are 50,000 training and 10,000 test images.
+    """
+    transform_train = transforms.Compose([
+        transforms.Resize(224),  # EfficientNet expects at least 224x224 inputs
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomCrop(224, padding=4),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],  # ImageNet mean
+            std=[0.229, 0.224, 0.225]    # ImageNet std
+        ),
+    ])
 
-transform_test = transforms.Compose([
-    transforms.Resize(224),
-    transforms.ToTensor(),
-    transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225]
-    ),
-])
+    transform_test = transforms.Compose([
+        transforms.Resize(224),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]
+        ),
+    ])
 
-# Download the CIFAR-100 dataset
-train_val_dataset = torchvision.datasets.CIFAR100(
-    root="./data", train=True, transform=transform_train, download=True
-)
+    # Download the CIFAR-100 dataset
+    train_val_dataset = torchvision.datasets.CIFAR100(
+        root="./data", train=True, transform=transform_train, download=True
+    )
 
-# Split train/val properly (80/20 split)
-train_size = int(0.8 * len(train_val_dataset))
-val_size = len(train_val_dataset) - train_size
-train_dataset, val_dataset = torch.utils.data.random_split(train_val_dataset, [train_size, val_size])
+    # Split train/val properly (80/20 split)
+    train_size = int(0.8 * len(train_val_dataset))
+    val_size = len(train_val_dataset) - train_size
+    train_dataset, val_dataset = torch.utils.data.random_split(train_val_dataset, [train_size, val_size])
 
-test_dataset = torchvision.datasets.CIFAR100(
-    root="./data", train=False, transform=transform_test, download=True
-)
+    test_dataset = torchvision.datasets.CIFAR100(
+        root="./data", train=False, transform=transform_test, download=True
+    )
 
-# DataLoaders allow batching and shuffling
-# Set num_workers=0 for compatibility with freeze support (e.g., PyInstaller executables)
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
-val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
-test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+    # DataLoaders allow batching and shuffling
+    # Set num_workers=0 for compatibility with freeze support (e.g., PyInstaller executables)
+    num_workers = 4
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
-# ============================================================
-# LOGGING AND CALLBACKS
-# ============================================================
+    # ============================================================
+    # LOGGING AND CALLBACKS
+    # ============================================================
 
-# Lightning handles TensorBoard automatically; no manual SummaryWriter needed
-run_name = f"b{batch_size}_lr{initial_lr:.0e}"
-tb_logger = loggers.TensorBoardLogger(save_dir="lightning_logs", name=run_name)
+    # Lightning handles TensorBoard automatically; no manual SummaryWriter needed
+    run_name = f"b{batch_size}_lr{initial_lr:.0e}"
+    tb_logger = loggers.TensorBoardLogger(save_dir="lightning_logs", name=run_name)
 
-# Early stopping monitors validation loss
-early_stop_callback = EarlyStopping(
-    monitor="loss/val", mode="min", patience=patience, verbose=True
-)
+    # Early stopping monitors validation loss
+    early_stop_callback = EarlyStopping(
+        monitor="loss/val", mode="min", patience=patience, verbose=True
+    )
 
-# Save best checkpoint by validation loss
-checkpoint_callback = ModelCheckpoint(
-    dirpath="./checkpoints",
-    filename="best_model",
-    save_top_k=1,
-    monitor="loss/val",
-    mode="min"
-)
+    # Save best checkpoint by validation loss
+    checkpoint_callback = ModelCheckpoint(
+        dirpath="./checkpoints",
+        filename="best_model",
+        save_top_k=1,
+        monitor="loss/val",
+        mode="min"
+    )
 
-# ============================================================
-# INITIAL TRAINER FOR LR FINDER
-# ============================================================
-# We use a shorter trainer here so LR finder doesn't train for long.
-trainer = Trainer(
-    accelerator="cpu",  # Force CPU
-    max_epochs=3,  # only a few for lr finder
-    logger=tb_logger,
-)
+    # ============================================================
+    # INITIAL TRAINER FOR LR FINDER
+    # ============================================================
+    # We use a shorter trainer here so LR finder doesn't train for long.
+    trainer = Trainer(
+        accelerator="auto",
+        max_epochs=3,  # only a few for lr finder
+        logger=tb_logger,
+    )
 
-# Initialize the model
-model = EfficientNetLightning(learning_rate=initial_lr)
+    # Initialize the model
+    model = EfficientNetLightning(learning_rate=initial_lr)
 
-# ============================================================
-# AUTOMATIC LEARNING RATE FINDING
-# ============================================================
-print("\nRunning learning rate finder...")
-tuner = Tuner(trainer)
-lr_finder = tuner.lr_find(model, train_dataloaders=train_loader, val_dataloaders=val_loader, min_lr=1e-5, max_lr=1e-1)
+    # ============================================================
+    # AUTOMATIC LEARNING RATE FINDING
+    # ============================================================
+    print("\nRunning learning rate finder...")
+    tuner = Tuner(trainer)
+    lr_finder = tuner.lr_find(model, train_dataloaders=train_loader, val_dataloaders=val_loader, min_lr=1e-5, max_lr=1e-1)
 
-# Automatically select the suggested LR
-new_lr = lr_finder.suggestion()
-print(f"Suggested learning rate: {new_lr:.2e}")
-model.hparams.learning_rate = new_lr
+    # Automatically select the suggested LR
+    new_lr = lr_finder.suggestion()
+    print(f"Suggested learning rate: {new_lr:.2e}")
+    model.hparams.learning_rate = new_lr
 
-# ============================================================
-# FULL TRAINING WITH EARLY STOPPING + CHECKPOINTING
-# ============================================================
-trainer = Trainer(
-    max_epochs=num_epochs,
-    accelerator="cpu",  # Force CPU
-    callbacks=[early_stop_callback, checkpoint_callback],
-    logger=tb_logger,
-    log_every_n_steps=10,
-)
+    # ============================================================
+    # FULL TRAINING WITH EARLY STOPPING + CHECKPOINTING
+    # ============================================================
+    trainer = Trainer(
+        max_epochs=num_epochs,
+        accelerator="auto",
+        callbacks=[early_stop_callback, checkpoint_callback],
+        logger=tb_logger,
+        log_every_n_steps=10,
+    )
 
-print("\nStarting training with tuned learning rate...")
-trainer.fit(model, train_loader, val_loader)
+    print("\nStarting training with tuned learning rate...")
+    trainer.fit(model, train_loader, val_loader)
 
-# ============================================================
-# SAVE FINAL MODEL
-# ============================================================
+    # ============================================================
+    # SAVE FINAL MODEL
+    # ============================================================
 
-torch.save(model.state_dict(), "./models/efficientnet_cifar100.pth")
-print("Model saved to './models/efficientnet_cifar100.pth'")
+    torch.save(model.state_dict(), "./models/efficientnet_cifar100.pth")
+    print("Model saved to './models/efficientnet_cifar100.pth'")
 
-# ============================================================
-# TEST BEST MODEL
-# ============================================================
+    # ============================================================
+    # TEST BEST MODEL
+    # ============================================================
 
-print("\nTesting best saved model on test data...")
-trainer.test(model, dataloaders=test_loader)
+    print("\nTesting best saved model on test data...")
+    trainer.test(model, dataloaders=test_loader)
+
+
+if __name__ == '__main__':
+    torch.set_float32_matmul_precision('high')
+    multiprocessing.freeze_support()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    run_training()

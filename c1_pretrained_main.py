@@ -1,3 +1,5 @@
+import optuna
+from optuna.integration import PyTorchLightningPruningCallback
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -21,7 +23,7 @@ class Hparams:
     def __init__(self, batch_size = model_options.BATCH_SIZE, initial_lr = model_options.INITIAL_LR, num_epochs = model_options.NUM_EPOCHS,
               max_epochs_lr_finder = model_options.MAX_EPOCHS_LR_FINDER, patience = model_options.PATIENCE,
               num_workers = model_options.NUM_WORKERS, padding = model_options.PADDING, input_size = model_options.INPUT_SIZE,
-              logging_steps = model_options.LOGGING_STEPS):
+              logging_steps = model_options.LOGGING_STEPS, log_dir = model_options.LOG_DIR):
         self.BATCH_SIZE = batch_size
         self.INITIAL_LR = initial_lr
         self.NUM_EPOCHS = num_epochs
@@ -31,22 +33,14 @@ class Hparams:
         self.PADDING = padding
         self.INPUT_SIZE = input_size
         self.LOGGING_STEPS = logging_steps
+        self.LOG_DIR = log_dir
 
-def main(hparams):
 
-    # ============================================================
-    # HYPERPARAMETERS AND DEVICE
-    # ============================================================
- 
-
-    # ============================================================
-    # DATA PREPARATION
-    # ============================================================
-
+def prepare_data(hparams):
     """
-    CIFAR-100 consists of 60,000 32x32 color images in 100 classes,
-    with 600 images per class. There are 50,000 training and 10,000 test images.
-    """
+        CIFAR-100 consists of 60,000 32x32 color images in 100 classes,
+        with 600 images per class. There are 50,000 training and 10,000 test images.
+        """
     transform_train = transforms.Compose([
         transforms.Resize(hparams.INPUT_SIZE),
         transforms.RandomHorizontalFlip(),
@@ -54,7 +48,7 @@ def main(hparams):
         transforms.ToTensor(),
         transforms.Normalize(
             mean=[0.485, 0.456, 0.406],  # ImageNet mean
-            std=[0.229, 0.224, 0.225]    # ImageNet std
+            std=[0.229, 0.224, 0.225]  # ImageNet std
         ),
     ])
 
@@ -83,10 +77,18 @@ def main(hparams):
 
     # DataLoaders allow batching and shuffling
     # Set NUM_WORKERS=0 for compatibility with freeze support (e.g., PyInstaller executables)
-    
-    train_loader = DataLoader(train_dataset, batch_size=hparams.BATCH_SIZE, shuffle=True, num_workers=hparams.NUM_WORKERS)
+
+    train_loader = DataLoader(train_dataset, batch_size=hparams.BATCH_SIZE, shuffle=True,
+                              num_workers=hparams.NUM_WORKERS)
     val_loader = DataLoader(val_dataset, batch_size=hparams.BATCH_SIZE, shuffle=False, num_workers=hparams.NUM_WORKERS)
-    test_loader = DataLoader(test_dataset, batch_size=hparams.BATCH_SIZE, shuffle=False, num_workers=hparams.NUM_WORKERS)
+    test_loader = DataLoader(test_dataset, batch_size=hparams.BATCH_SIZE, shuffle=False,
+                             num_workers=hparams.NUM_WORKERS)
+
+    return train_loader, val_loader, test_loader
+
+
+def main(hparams):
+    train_loader, val_loader, test_loader = prepare_data(hparams)
 
     # ============================================================
     # LOGGING AND CALLBACKS
@@ -94,7 +96,7 @@ def main(hparams):
 
     # Lightning handles TensorBoard automatically; no manual SummaryWriter needed
     run_name = f"b{hparams.BATCH_SIZE}_lr{hparams.INITIAL_LR:.0e}"
-    tb_logger = loggers.TensorBoardLogger(save_dir="lightning_logs", name=run_name)
+    tb_logger = loggers.TensorBoardLogger(save_dir=f"{hparams.LOG_DIR}", name=run_name)
 
     # Early stopping monitors validation loss
     early_stop_callback = EarlyStopping(
@@ -167,10 +169,62 @@ def main(hparams):
     trainer.test(model, dataloaders=test_loader)
 
 
+def objective(trial):
+    hparams = Hparams()
+
+    # Hyperparameters to optimize
+    unfreeze_layers = trial.suggest_int("unfreeze_layers", 0, 8)
+    learning_rate = trial.suggest_loguniform("learning_rate", 1e-5, 1e-1)
+    dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
+
+    model = EfficientNetLightning(
+        learning_rate=learning_rate,
+        dropout_rate=dropout_rate,
+        unfreeze_layers=unfreeze_layers
+    )
+
+    train_loader, val_loader, _ = prepare_data(hparams)
+
+    tb_logger = loggers.TensorBoardLogger(save_dir="lightning_logs_optuna", name=f"trial_{trial.number}")
+
+    trainer = Trainer(
+        max_epochs=5,  # keep short for tuning
+        accelerator="auto",
+        logger=tb_logger,
+        callbacks=[
+            PyTorchLightningPruningCallback(trial, monitor="acc/val"),
+            EarlyStopping(monitor="loss/val", patience=3, mode="min")
+        ],
+        enable_progress_bar=True
+    )
+
+    trainer.fit(model, train_loader, val_loader)
+
+    # Return final validation accuracy for Optuna optimization
+    val_acc = trainer.callback_metrics.get("acc/val")
+    return val_acc.item() if val_acc is not None else 0.0
+
+def run_optuna_study(n_trials=10):
+    study = optuna.create_study(direction="maximize", study_name="efficientnet_cifar100_unfreeze")
+    study.optimize(objective, n_trials=n_trials)
+
+    print("\nBest trial:")
+    trial = study.best_trial
+    print(f"  Value (val_acc): {trial.value:.4f}")
+    print(f"  Params: {trial.params}")
+
+    return trial
+
+
 if __name__ == '__main__':
 
     torch.set_float32_matmul_precision('high')
     multiprocessing.freeze_support()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    hparams = Hparams()
-    main(hparams)
+
+    best_trial = run_optuna_study(n_trials = 10)
+    best_params = best_trial.params
+    print(f"the best parameters are: {best_params}")
+
+    #hparams = Hparams()
+    #main(hparams)

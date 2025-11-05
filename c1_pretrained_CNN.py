@@ -23,7 +23,8 @@ class EfficientNetLightning(LightningModule):
     Handles training, validation, and optimization automatically.
     """
 
-    def __init__(self, learning_rate=model_options.INITIAL_LR, weight_decay=model_options.WEIGHT_DECAY, dropout_rate=model_options.DROPOUT_RATE):
+    def __init__(self, learning_rate=model_options.INITIAL_LR, weight_decay=model_options.WEIGHT_DECAY,
+                 dropout_rate=model_options.DROPOUT_RATE, unfreeze_layers=0):
         super().__init__()
 
         # Save hyperparameters (for logging and checkpointing)
@@ -40,6 +41,13 @@ class EfficientNetLightning(LightningModule):
         # Freeze feature extractor layers
         for param in self.model.features.parameters():
             param.requires_grad = False
+
+        # Unfreeze last N layers from the back:
+        if unfreeze_layers > 0:
+            layers = list(self.model.features.children())
+            for layer in layers[-unfreeze_layers:]:
+                for param in layer.parameters():
+                    param.requires_grad = True
 
         # Define loss function and metrics
         self.criterion = nn.CrossEntropyLoss()

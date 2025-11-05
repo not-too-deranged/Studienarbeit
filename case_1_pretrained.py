@@ -13,6 +13,8 @@ import torchvision
 import torchvision.transforms as transforms
 from torchvision import models
 import multiprocessing
+import tensorboard
+import optuna
 
 class EfficientNetLightning(LightningModule):
     """
@@ -20,7 +22,7 @@ class EfficientNetLightning(LightningModule):
     Handles training, validation, and optimization automatically.
     """
 
-    def __init__(self, learning_rate=1e-3, weight_decay=1e-4, dropout_rate=0.2):
+    def __init__(self, learning_rate=1e-3, weight_decay=1e-4, dropout_rate=0.2, unfreeze_layers=0):
         super().__init__()
 
         # Save hyperparameters (for logging and checkpointing)
@@ -37,6 +39,13 @@ class EfficientNetLightning(LightningModule):
         # Freeze feature extractor layers
         for param in self.model.features.parameters():
             param.requires_grad = False
+
+        # Unfreeze last N layers from the back:
+        if unfreeze_layers > 0:
+            layers = list(self.model.features.children())
+            for layer in layers[-unfreeze_layers:]:
+                for param in layer.parameters():
+                    param.requires_grad = True
 
         # Define loss function and metrics
         self.criterion = nn.CrossEntropyLoss()
@@ -238,9 +247,55 @@ def run_training():
     print("\nTesting best saved model on test data...")
     trainer.test(model, dataloaders=test_loader)
 
+def objective(trial):
+    # Hyperparameters to optimize
+    unfreeze_layers = trial.suggest_int("unfreeze_layers", 0, 20)  # efficientnet_v2_l has ~24 feature blocks
+    learning_rate = trial.suggest_loguniform("learning_rate", 1e-5, 1e-1)
+    dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
+
+    model = EfficientNetLightning(
+        learning_rate=learning_rate,
+        dropout_rate=dropout_rate,
+        unfreeze_layers=unfreeze_layers
+    )
+
+    train_loader, val_loader, _ = get_dataloaders()
+
+    tb_logger = loggers.TensorBoardLogger(save_dir="lightning_logs_optuna", name=f"trial_{trial.number}")
+
+    trainer = Trainer(
+        max_epochs=5,  # keep short for tuning
+        accelerator="auto",
+        logger=tb_logger,
+        callbacks=[
+            PyTorchLightningPruningCallback(trial, monitor="acc/val"),
+            EarlyStopping(monitor="loss/val", patience=3, mode="min")
+        ],
+        enable_progress_bar=False
+    )
+
+    trainer.fit(model, train_loader, val_loader)
+
+    # Return final validation accuracy for Optuna optimization
+    val_acc = trainer.callback_metrics.get("acc/val")
+    return val_acc.item() if val_acc is not None else 0.0
+
+def run_optuna_study(n_trials=10):
+    study = optuna.create_study(direction="maximize", study_name="efficientnet_cifar100_unfreeze")
+    study.optimize(objective, n_trials=n_trials)
+
+    print("\nBest trial:")
+    trial = study.best_trial
+    print(f"  Value (val_acc): {trial.value:.4f}")
+    print(f"  Params: {trial.params}")
+
+    return trial
 
 if __name__ == '__main__':
     torch.set_float32_matmul_precision('high')
     multiprocessing.freeze_support()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    best_trial = run_optuna_study(n_trials=10)
+
     run_training()

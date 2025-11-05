@@ -68,9 +68,18 @@ def prepare_data(hparams):
         ),
     ])
 
+    # ============================================================
+    # Download datasets
+    # ============================================================
+
+
     # Download the CIFAR-100 dataset
     train_val_dataset = torchvision.datasets.CIFAR100(
         root="./data", train=True, transform=transform_train, download=True
+    )
+
+    test_dataset = torchvision.datasets.CIFAR100(
+    root="./data", train=False, transform=transform_test, download=True
     )
 
 
@@ -79,6 +88,24 @@ def prepare_data(hparams):
     train_val_dataset = torchvision.datasets.Places365(
         root="./data", split="train", transform=transform_train, download=True
     )
+
+    test_val_dataset = torchvision.datasets.Places365(
+    root="./data", split="test", transform=transform_test, download=True
+    )
+    """
+
+
+    # load cat dataset
+
+    """
+
+    train_val_dataset = torchvision.datasets.ImageFolder(
+        root="./data/cat_data/train", transform=transform_train
+    )
+
+    train_val_dataset = torchvision.datasets.ImageFolder(
+        root="./data/cat_data/val", transform=transform_test
+    )
     """
 
     # Split train/val properly (80/20 split)
@@ -86,9 +113,7 @@ def prepare_data(hparams):
     val_size = len(train_val_dataset) - train_size
     train_dataset, val_dataset = torch.utils.data.random_split(train_val_dataset, [train_size, val_size])
 
-    test_dataset = torchvision.datasets.CIFAR100(
-        root="./data", train=False, transform=transform_test, download=True
-    )
+
 
     # DataLoaders allow batching and shuffling
     # Set NUM_WORKERS=0 for compatibility with freeze support (e.g., PyInstaller executables)

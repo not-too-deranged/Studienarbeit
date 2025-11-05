@@ -16,23 +16,27 @@ import multiprocessing
 from c1_pretrained_CNN import EfficientNetLightning
 import model_options
 
+class Hparams:
 
+    def __init__(self, batch_size = model_options.BATCH_SIZE, initial_lr = model_options.INITIAL_LR, num_epochs = model_options.NUM_EPOCHS,
+              max_epochs_lr_finder = model_options.MAX_EPOCHS_LR_FINDER, patience = model_options.PATIENCE,
+              num_workers = model_options.NUM_WORKERS, padding = model_options.PADDING, input_size = model_options.INPUT_SIZE,
+              logging_steps = model_options.LOGGING_STEPS):
+        self.BATCH_SIZE = batch_size
+        self.INITIAL_LR = initial_lr
+        self.NUM_EPOCHS = num_epochs
+        self.MAX_EPOCHS_LR_FINDER = max_epochs_lr_finder
+        self.PATIENCE = patience
+        self.NUM_WORKERS = num_workers
+        self.PADDING = padding
+        self.INPUT_SIZE = input_size
+        self.LOGGING_STEPS = logging_steps
 
-def main():
+def main(hparams):
 
     # ============================================================
     # HYPERPARAMETERS AND DEVICE
     # ============================================================
-
-    BATCH_SIZE  = model_options.BATCH_SIZE
-    INITIAL_LR = model_options.INITIAL_LR
-    NUM_EPOCHS = model_options.NUM_EPOCHS
-    MAX_EPOCHS_LR_FINDER = model_options.MAX_EPOCHS_LR_FINDER
-    PATIENCE = model_options.PATIENCE
-    NUM_WORKERS = model_options.NUM_WORKERS
-    PADDING = model_options.PADDING
-    INPUT_SIZE = model_options.INPUT_SIZE
-    LOGGING_STEPS = model_options.LOGGING_STEPS
  
 
     # ============================================================
@@ -44,9 +48,9 @@ def main():
     with 600 images per class. There are 50,000 training and 10,000 test images.
     """
     transform_train = transforms.Compose([
-        transforms.Resize(INPUT_SIZE),  
+        transforms.Resize(hparams.INPUT_SIZE),
         transforms.RandomHorizontalFlip(),
-        transforms.RandomCrop(INPUT_SIZE, padding=PADDING),
+        transforms.RandomCrop(hparams.INPUT_SIZE, padding=hparams.PADDING),
         transforms.ToTensor(),
         transforms.Normalize(
             mean=[0.485, 0.456, 0.406],  # ImageNet mean
@@ -55,7 +59,7 @@ def main():
     ])
 
     transform_test = transforms.Compose([
-        transforms.Resize(INPUT_SIZE),
+        transforms.Resize(hparams.INPUT_SIZE),
         transforms.ToTensor(),
         transforms.Normalize(
             mean=[0.485, 0.456, 0.406],
@@ -80,21 +84,21 @@ def main():
     # DataLoaders allow batching and shuffling
     # Set NUM_WORKERS=0 for compatibility with freeze support (e.g., PyInstaller executables)
     
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS)
-    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=NUM_WORKERS)
+    train_loader = DataLoader(train_dataset, batch_size=hparams.BATCH_SIZE, shuffle=True, num_workers=hparams.NUM_WORKERS)
+    val_loader = DataLoader(val_dataset, batch_size=hparams.BATCH_SIZE, shuffle=False, num_workers=hparams.NUM_WORKERS)
+    test_loader = DataLoader(test_dataset, batch_size=hparams.BATCH_SIZE, shuffle=False, num_workers=hparams.NUM_WORKERS)
 
     # ============================================================
     # LOGGING AND CALLBACKS
     # ============================================================
 
     # Lightning handles TensorBoard automatically; no manual SummaryWriter needed
-    run_name = f"b{BATCH_SIZE}_lr{INITIAL_LR:.0e}"
+    run_name = f"b{hparams.BATCH_SIZE}_lr{hparams.INITIAL_LR:.0e}"
     tb_logger = loggers.TensorBoardLogger(save_dir="lightning_logs", name=run_name)
 
     # Early stopping monitors validation loss
     early_stop_callback = EarlyStopping(
-        monitor="loss/val", mode="min", patience=PATIENCE, verbose=True
+        monitor="loss/val", mode="min", patience=hparams.PATIENCE, verbose=True
     )
 
     # Save best checkpoint by validation loss
@@ -113,7 +117,7 @@ def main():
     # Only a few epochs for LR finder
     trainer = Trainer(
         accelerator="auto",
-        max_epochs=MAX_EPOCHS_LR_FINDER, 
+        max_epochs=hparams.MAX_EPOCHS_LR_FINDER,
         logger=tb_logger,
     )
 
@@ -138,11 +142,11 @@ def main():
     # ============================================================
 
     trainer = Trainer(
-        max_epochs=NUM_EPOCHS,
+        max_epochs=hparams.NUM_EPOCHS,
         accelerator="auto",
         callbacks=[early_stop_callback, checkpoint_callback],
         logger=tb_logger,
-        log_every_n_steps=LOGGING_STEPS,
+        log_every_n_steps=hparams.LOGGING_STEPS,
     )
 
     print("\nStarting training with tuned learning rate...")
@@ -168,4 +172,5 @@ if __name__ == '__main__':
     torch.set_float32_matmul_precision('high')
     multiprocessing.freeze_support()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    main()
+    hparams = Hparams()
+    main(hparams)

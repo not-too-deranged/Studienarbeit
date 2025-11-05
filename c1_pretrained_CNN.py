@@ -19,7 +19,7 @@ import model_options
 
 class EfficientNetLightning(LightningModule):
     """
-    LightningModule wrapper for EfficientNetV2_L fine-tuning on CIFAR-100.
+    LightningModule wrapper for EfficientNetV2_L.
     Handles training, validation, and optimization automatically.
     """
 

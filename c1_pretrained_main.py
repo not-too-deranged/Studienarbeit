@@ -37,10 +37,7 @@ class Hparams:
 
 
 def prepare_data(hparams):
-    """
-        CIFAR-100 consists of 60,000 32x32 color images in 100 classes,
-        with 600 images per class. There are 50,000 training and 10,000 test images.
-        """
+
     transform_train = transforms.Compose([
         transforms.Resize(hparams.INPUT_SIZE),
         transforms.RandomHorizontalFlip(),
@@ -65,6 +62,14 @@ def prepare_data(hparams):
     train_val_dataset = torchvision.datasets.CIFAR100(
         root="./data", train=True, transform=transform_train, download=True
     )
+
+
+    # Download Places365 dataset for third test case
+    """
+    train_val_dataset = torchvision.datasets.Places365(
+        root="./data", split="train", transform=transform_train, download=True
+    )
+    """
 
     # Split train/val properly (80/20 split)
     train_size = int(0.8 * len(train_val_dataset))

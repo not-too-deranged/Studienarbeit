@@ -1,4 +1,8 @@
+import json
+import time
+
 import optuna
+from codecarbon import EmissionsTracker
 from optuna.integration import PyTorchLightningPruningCallback
 import torch
 import torch.nn as nn
@@ -17,13 +21,16 @@ from torchvision import models
 import multiprocessing
 from c1_pretrained_CNN import EfficientNetLightning
 import model_options
+from compute_cost_logger import ComputeCostLogger
+
 
 class Hparams:
 
     def __init__(self, batch_size = model_options.BATCH_SIZE, initial_lr = model_options.INITIAL_LR, num_epochs = model_options.NUM_EPOCHS,
               max_epochs_lr_finder = model_options.MAX_EPOCHS_LR_FINDER, patience = model_options.PATIENCE,
               num_workers = model_options.NUM_WORKERS, padding = model_options.PADDING, input_size = model_options.INPUT_SIZE,
-              logging_steps = model_options.LOGGING_STEPS, log_dir = model_options.LOG_DIR):
+              logging_steps = model_options.LOGGING_STEPS, log_dir = model_options.LOG_DIR, dropout_rate = model_options.DROPOUT_RATE,
+              unfreeze_layers = model_options.UNFREEZE_LAYERS, weight_decay = model_options.WEIGHT_DECAY):
         self.BATCH_SIZE = batch_size
         self.INITIAL_LR = initial_lr
         self.NUM_EPOCHS = num_epochs
@@ -34,6 +41,9 @@ class Hparams:
         self.INPUT_SIZE = input_size
         self.LOGGING_STEPS = logging_steps
         self.LOG_DIR = log_dir
+        self.DROPOUT_RATE = dropout_rate
+        self.UNFREEZE_LAYERS = unfreeze_layers
+        self.WEIGHT_DECAY = weight_decay
 
 
 def prepare_data(hparams):
@@ -117,32 +127,9 @@ def main(hparams):
         mode="min"
     )
 
-    # ============================================================
-    # INITIAL TRAINER FOR LR FINDER
-    # ============================================================
-    
-    # Only a few epochs for LR finder
-    trainer = Trainer(
-        accelerator="auto",
-        max_epochs=hparams.MAX_EPOCHS_LR_FINDER,
-        logger=tb_logger,
-    )
-
     # Initialize the model
-    model = EfficientNetLightning()
-
-    # ============================================================
-    # AUTOMATIC LEARNING RATE FINDING
-    # ============================================================
-
-    print("\nRunning learning rate finder...")
-    tuner = Tuner(trainer)
-    lr_finder = tuner.lr_find(model, train_dataloaders=train_loader, val_dataloaders=val_loader, min_lr=1e-5, max_lr=1e-1)
-
-    # Plot the results (optional)
-    new_lr = lr_finder.suggestion()
-    print(f"Suggested learning rate: {new_lr:.2e}")
-    model.hparams.learning_rate = new_lr
+    model = EfficientNetLightning(learning_rate = hparams.INITIAL_LR, weight_decay=hparams.WEIGHT_DECAY,
+                                  dropout_rate=hparams.DROPOUT_RATE, unfreeze_layers=hparams.UNFREEZE_LAYERS)
 
     # ============================================================
     # FULL TRAINING WITH EARLY STOPPING + CHECKPOINTING
@@ -151,7 +138,7 @@ def main(hparams):
     trainer = Trainer(
         max_epochs=hparams.NUM_EPOCHS,
         accelerator="auto",
-        callbacks=[early_stop_callback, checkpoint_callback],
+        callbacks=[ComputeCostLogger(), early_stop_callback, checkpoint_callback],
         logger=tb_logger,
         log_every_n_steps=hparams.LOGGING_STEPS,
     )
@@ -179,13 +166,15 @@ def objective(trial):
 
     # Hyperparameters to optimize
     unfreeze_layers = trial.suggest_int("unfreeze_layers", 0, 8)
-    learning_rate = trial.suggest_loguniform("learning_rate", 1e-5, 1e-1)
+    learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-1)
     dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
+    weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-1)
 
     model = EfficientNetLightning(
         learning_rate=learning_rate,
         dropout_rate=dropout_rate,
-        unfreeze_layers=unfreeze_layers
+        unfreeze_layers=unfreeze_layers,
+        weight_decay=weight_decay
     )
 
     train_loader, val_loader, _ = prepare_data(hparams)
@@ -210,6 +199,14 @@ def objective(trial):
     return val_acc.item() if val_acc is not None else 0.0
 
 def run_optuna_study(n_trials=10):
+    tracker = EmissionsTracker(
+        project_name="optuna_tuning",
+        output_dir="./emission_logs",
+        measure_power_secs=15
+    )
+    tracker.start()
+    start_time = time.time()
+
     study = optuna.create_study(direction="maximize", study_name="efficientnet_cifar100_unfreeze")
     study.optimize(objective, n_trials=n_trials)
 
@@ -217,6 +214,13 @@ def run_optuna_study(n_trials=10):
     trial = study.best_trial
     print(f"  Value (val_acc): {trial.value:.4f}")
     print(f"  Params: {trial.params}")
+
+    total_emissions = tracker.stop()
+    duration = time.time() - start_time
+    print("\n=== OPTUNA STUDY COST SUMMARY ===")
+    print(f"Total time: {duration / 60:.2f} min")
+    print(f"Total energy: {tracker.final_emissions_data.energy_consumed:.3f} kWh")
+    print(f"Total CO2: {total_emissions:.6f} kg")
 
     return trial
 
@@ -227,9 +231,12 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    best_trial = run_optuna_study(n_trials = 10)
+    best_trial = run_optuna_study(n_trials = 20)
     best_params = best_trial.params
     print(f"the best parameters are: {best_params}")
+    with open("best_parameters.json", "w") as f:
+        json.dump(best_params, f)
 
-    #hparams = Hparams()
-    #main(hparams)
+    hparams = Hparams(dropout_rate=best_params["dropout_rate"], initial_lr=best_params["learning_rate"],
+                      unfreeze_layers=best_params["unfreeze_layers"], weight_decay=best_params["weight_decay"])
+    main(hparams)

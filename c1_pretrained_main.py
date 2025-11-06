@@ -95,10 +95,10 @@ def prepare_data(hparams):
     """
 
 
-    # load cat dataset
+    # load cat dataset: https://github.com/Aml-Hassan-Abd-El-hamid/datasets
 
     """
-
+    
     train_val_dataset = torchvision.datasets.ImageFolder(
         root="./data/cat_data/train", transform=transform_train
     )

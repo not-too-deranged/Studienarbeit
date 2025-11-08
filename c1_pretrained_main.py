@@ -1,26 +1,20 @@
 import json
+import multiprocessing
 import time
 
 import optuna
-from codecarbon import EmissionsTracker
-from optuna.integration import PyTorchLightningPruningCallback
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import lightning
-import torchmetrics
-from lightning import Trainer, LightningModule
-from lightning.pytorch import loggers
-from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
-from lightning.pytorch.tuner import Tuner
-from lightning.pytorch.utilities.model_summary import ModelSummary
-from torch.utils.data import DataLoader
 import torchvision
 import torchvision.transforms as transforms
-from torchvision import models
-import multiprocessing
-from c1_pretrained_CNN import EfficientNetLightning
+from codecarbon import EmissionsTracker
+from lightning import Trainer
+from lightning.pytorch import loggers
+from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
+from optuna.integration import PyTorchLightningPruningCallback
+from torch.utils.data import DataLoader
+
 import model_options
+from c1_pretrained_CNN import EfficientNetLightning
 from compute_cost_logger import ComputeCostLogger
 
 
@@ -191,8 +185,8 @@ def objective(trial):
 
     # Hyperparameters to optimize
     unfreeze_layers = trial.suggest_int("unfreeze_layers", 0, 8)
-    learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-1)
-    dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
+    learning_rate = trial.suggest_float("learning_rate", 1e-6, 1e-2)
+    dropout_rate = trial.suggest_float("dropout_rate", 0.05, 0.5)
     weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-1)
 
     model = EfficientNetLightning(

@@ -1,20 +1,11 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import lightning
 import torchmetrics
-from lightning import Trainer, LightningModule
-from lightning.pytorch import loggers
-from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
-from lightning.pytorch.tuner import Tuner
-from lightning.pytorch.utilities.model_summary import ModelSummary
-from torch.utils.data import DataLoader
-import torchvision
-import torchvision.transforms as transforms
+from lightning import LightningModule
 from torchvision import models
-import multiprocessing
-import model_options
 
+import model_options
 
 
 class EfficientNetLightning(LightningModule):
@@ -100,8 +91,24 @@ class EfficientNetLightning(LightningModule):
 
     def configure_optimizers(self):
         """Set up the optimizer (and optionally scheduler)."""
-        optimizer = optim.Adam(self.model.classifier.parameters(), lr=self.hparams.learning_rate,
-                               weight_decay=self.hparams.weight_decay)
+
+        # Split parameters into two groups
+        backbone_params = []
+        classifier_params = []
+
+        for name, param in self.model.named_parameters():
+            if not param.requires_grad:
+                continue
+            if "classifier" in name:
+                classifier_params.append(param)
+            else:
+                backbone_params.append(param)
+
+        #lower learning rate for backbone
+        optimizer = optim.AdamW([
+            {"params": backbone_params, "lr": self.hparams.learning_rate * 0.1},
+            {"params": classifier_params, "lr": self.hparams.learning_rate}
+        ], weight_decay=self.hparams.weight_decay)
 
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=model_options.PATIENCE)
 

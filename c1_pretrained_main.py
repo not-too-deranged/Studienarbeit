@@ -106,7 +106,7 @@ def prepare_data(hparams):
     )
 
     test_dataset = torchvision.datasets.ImageFolder(
-        root="./data/cat-dataset/train", transform=transform_test
+        root="./data/cat-dataset/test", transform=transform_test
     )
     #"""
 
@@ -165,7 +165,7 @@ def main(hparams):
     trainer = Trainer(
         max_epochs=hparams.NUM_EPOCHS,
         accelerator="auto",
-        callbacks=[ComputeCostLogger(), early_stop_callback, checkpoint_callback],
+        callbacks=[ComputeCostLogger(output_dir="emission_logs_c2_pretrained"), early_stop_callback, checkpoint_callback],
         logger=tb_logger,
         log_every_n_steps=hparams.LOGGING_STEPS,
     )
@@ -258,7 +258,7 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    best_trial = run_optuna_study(n_trials = 20)
+    best_trial = run_optuna_study(n_trials = 40)
     best_params = best_trial.params
     print(f"the best parameters are: {best_params}")
     with open("best_parameters.json", "w") as f:

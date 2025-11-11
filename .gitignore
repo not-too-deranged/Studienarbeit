@@ -15,8 +15,8 @@ runs/cifar10_pretrained/
 /checkpoints/
 /data/
 /models/
-/tensorboard_logs/
-/lightning_logs/
-/lightning_logs_optuna/
+tensorboard_logs
+lightning_logs
+lightning_logs_optuna
 /emission_logs/
 /.idea/

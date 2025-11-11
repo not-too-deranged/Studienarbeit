@@ -24,7 +24,9 @@ class Hparams:
               max_epochs_lr_finder = model_options.MAX_EPOCHS_LR_FINDER, patience = model_options.PATIENCE,
               num_workers = model_options.NUM_WORKERS, padding = model_options.PADDING, input_size = model_options.INPUT_SIZE,
               logging_steps = model_options.LOGGING_STEPS, log_dir = model_options.LOG_DIR, dropout_rate = model_options.DROPOUT_RATE,
-              unfreeze_layers = model_options.UNFREEZE_LAYERS, weight_decay = model_options.WEIGHT_DECAY):
+              unfreeze_layers = model_options.UNFREEZE_LAYERS, weight_decay = model_options.WEIGHT_DECAY,
+                 log_dir_optuna = model_options.LOG_DIR_OPTUNA, checkpoint_dir = model_options.CHECKPOINT_DIR,
+                 modelname = model_options.MODELNAME, runname = model_options.RUNNAME):
         self.BATCH_SIZE = batch_size
         self.INITIAL_LR = initial_lr
         self.NUM_EPOCHS = num_epochs
@@ -38,6 +40,10 @@ class Hparams:
         self.DROPOUT_RATE = dropout_rate
         self.UNFREEZE_LAYERS = unfreeze_layers
         self.WEIGHT_DECAY = weight_decay
+        self.LOG_DIR_OPTUNA = log_dir_optuna
+        self.CHECKPOINT_DIR = checkpoint_dir
+        self.MODELNAME = modelname
+        self.RUNNAME = runname
 
 
 def prepare_data(hparams):
@@ -68,6 +74,7 @@ def prepare_data(hparams):
 
 
     # Download the CIFAR-100 dataset
+    """
     train_val_dataset = torchvision.datasets.CIFAR100(
         root="./data", train=True, transform=transform_train, download=True
     )
@@ -75,6 +82,7 @@ def prepare_data(hparams):
     test_dataset = torchvision.datasets.CIFAR100(
     root="./data", train=False, transform=transform_test, download=True
     )
+    """
 
 
     # Download Places365 dataset for third test case
@@ -83,7 +91,7 @@ def prepare_data(hparams):
         root="./data", split="train", transform=transform_train, download=True
     )
 
-    test_val_dataset = torchvision.datasets.Places365(
+    test_dataset = torchvision.datasets.Places365(
     root="./data", split="test", transform=transform_test, download=True
     )
     """
@@ -91,16 +99,16 @@ def prepare_data(hparams):
 
     # load cat dataset: https://github.com/Aml-Hassan-Abd-El-hamid/datasets
 
-    """
+    #"""
     
     train_val_dataset = torchvision.datasets.ImageFolder(
-        root="./data/cat_data/train", transform=transform_train
+        root="./data/cat-dataset/train", transform=transform_train
     )
 
-    train_val_dataset = torchvision.datasets.ImageFolder(
-        root="./data/cat_data/val", transform=transform_test
+    test_dataset = torchvision.datasets.ImageFolder(
+        root="./data/cat-dataset/train", transform=transform_test
     )
-    """
+    #"""
 
     # Split train/val properly (80/20 split)
     train_size = int(0.8 * len(train_val_dataset))
@@ -139,7 +147,7 @@ def main(hparams):
 
     # Save best checkpoint by validation loss
     checkpoint_callback = ModelCheckpoint(
-        dirpath="./checkpoints",
+        dirpath=f"./{hparams.CHECKPOINT_DIR}",
         filename="best_model",
         save_top_k=1,
         monitor="loss/val",
@@ -169,8 +177,8 @@ def main(hparams):
     # SAVE FINAL MODEL
     # ============================================================
 
-    torch.save(model.state_dict(), "./models/efficientnet_cifar100.pth")
-    print("Model saved to './models/efficientnet_cifar100.pth'")
+    torch.save(model.state_dict(), f"./models/{hparams.MODELNAME}.pth")
+    print(f"Model saved to './models/{hparams.MODELNAME}.pth'")
 
     # ============================================================
     # TEST BEST MODEL
@@ -181,7 +189,7 @@ def main(hparams):
 
 
 def objective(trial):
-    hparams = Hparams()
+    hparams = Hparams(log_dir_optuna="lightning_logs_optuna_c2_pretrained")
 
     # Hyperparameters to optimize
     unfreeze_layers = trial.suggest_int("unfreeze_layers", 0, 8)
@@ -198,7 +206,7 @@ def objective(trial):
 
     train_loader, val_loader, _ = prepare_data(hparams)
 
-    tb_logger = loggers.TensorBoardLogger(save_dir="lightning_logs_optuna", name=f"trial_{trial.number}")
+    tb_logger = loggers.TensorBoardLogger(save_dir=f"{model_options.LOG_DIR_OPTUNA}", name=f"trial_{trial.number}")
 
     trainer = Trainer(
         max_epochs=5,  # keep short for tuning
@@ -220,13 +228,13 @@ def objective(trial):
 def run_optuna_study(n_trials=10):
     tracker = EmissionsTracker(
         project_name="optuna_tuning",
-        output_dir="./emission_logs",
+        output_dir="./emission_logs_c2_pretrained",
         measure_power_secs=15
     )
     tracker.start()
     start_time = time.time()
 
-    study = optuna.create_study(direction="maximize", study_name="efficientnet_cifar100_unfreeze")
+    study = optuna.create_study(direction="maximize", study_name="efficientnet_cats_unfreeze")
     study.optimize(objective, n_trials=n_trials)
 
     print("\nBest trial:")
@@ -257,5 +265,7 @@ if __name__ == '__main__':
         json.dump(best_params, f)
 
     hparams = Hparams(dropout_rate=best_params["dropout_rate"], initial_lr=best_params["learning_rate"],
-                      unfreeze_layers=best_params["unfreeze_layers"], weight_decay=best_params["weight_decay"])
+                      unfreeze_layers=best_params["unfreeze_layers"], weight_decay=best_params["weight_decay"],
+                      checkpoint_dir = "c2_pretrained_checkpoints", modelname = "efficientnet_cats_pretrained",
+                      runname = "c2_pretrained")
     main(hparams)

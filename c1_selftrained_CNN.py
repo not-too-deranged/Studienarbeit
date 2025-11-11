@@ -87,16 +87,7 @@ class MBConv(nn.Module):
 class EfficientNetV2(nn.Module):
     def __init__(self, num_classes=model_options.NUM_CLASSES, dropout_rate=model_options.DROPOUT_RATE, config=None):
         super(EfficientNetV2, self).__init__()
-        if config is None:
-            # Default EfficientNetV2_L config: [blocks, in_c, out_c, exp_r, k, s, se_r, fused]
-            config = [
-                [2, 32, 32, 1, 3, 1, 0.25, True],   # Stage 1
-                [4, 32, 64, 4, 3, 2, 0.25, True],   # Stage 2
-                [4, 64, 96, 4, 3, 2, 0.25, True],   # Stage 3
-                [6, 96, 192, 4, 3, 2, 0.25, False], # Stage 4
-                [9, 192, 224, 6, 3, 1, 0.25, False],# Stage 5
-                [15, 224, 384, 6, 3, 2, 0.25, False]# Stage 6
-            ]
+        
 
         # Stem
         self.stem = nn.Sequential(

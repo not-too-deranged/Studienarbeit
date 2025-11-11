@@ -19,7 +19,7 @@ import torchvision
 import torchvision.transforms as transforms
 from torchvision import models
 import multiprocessing
-from c1_pretrained_CNN import EfficientNetLightning
+from c1_selftrained_CNN import EfficientNetLightning
 import model_options
 from compute_cost_logger import ComputeCostLogger
 
@@ -188,17 +188,26 @@ def main(hparams):
 
 def objective(trial):
     hparams = Hparams()
-
     # Hyperparameters to optimize
-    
-    learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-1)
+    learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-1, log=True)
     dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
-    weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-1)
-
+    weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-1, log=True)
+    unfreeze_layers = trial.suggest_int("unfreeze_layers", 0, 6)  # Added
+    config = [
+    [trial.suggest_int("stage1_blocks", 1, 5), 32, 32, 1, 3, 1, 0.25, True],  # Vary blocks in stage 1 could be done for more
+                [2, 32, 32, 1, 3, 1, 0.25, True],   # Stage 1
+                [4, 32, 64, 4, 3, 2, 0.25, True],   # Stage 2
+                [4, 64, 96, 4, 3, 2, 0.25, True],   # Stage 3
+                [6, 96, 192, 4, 3, 2, 0.25, False], # Stage 4
+                [9, 192, 224, 6, 3, 1, 0.25, False],# Stage 5
+                [15, 224, 384, 6, 3, 2, 0.25, False]# Stage 6
+            ]
     model = EfficientNetLightning(
         learning_rate=learning_rate,
         dropout_rate=dropout_rate,
-        weight_decay=weight_decay
+        weight_decay=weight_decay,
+        unfreeze_layers=unfreeze_layers,
+        config=config
     )
 
     train_loader, val_loader, _ = prepare_data(hparams)

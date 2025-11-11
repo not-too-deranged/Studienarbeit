@@ -20,3 +20,6 @@ UNFREEZE_LAYERS = 0
 CHECKPOINT_DIR = "c2_pretrained_checkpoints"
 MODELNAME = "efficientnet_cats_pretrained"
 RUNNAME = "c2_pretrained"
+
+
+#tensorboard --logdir /path/to/lightning_logs

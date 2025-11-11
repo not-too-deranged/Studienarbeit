@@ -14,6 +14,7 @@ LOGGING_STEPS = 10
 WEIGHT_DECAY = 1e-4
 DROPOUT_RATE = 0.2
 NUM_CLASSES = 100
+STEM_STRIDE = 2  # stride for the initial conv layer
 LOG_DIR = "lightning_logs"
 LOG_DIR_OPTUNA = "lightning_logs_optuna_c2_pretrained"
 UNFREEZE_LAYERS = 0

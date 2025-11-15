@@ -135,7 +135,7 @@ class EfficientNetLightning(LightningModule):
     """
 
     def __init__(self, learning_rate=model_options.INITIAL_LR, weight_decay=model_options.WEIGHT_DECAY,
-                 dropout_rate=model_options.DROPOUT_RATE, unfreeze_layers=0, config=None):
+                 dropout_rate=model_options.DROPOUT_RATE, config=None):
         super().__init__()
 
         # Save hyperparameters (for logging and checkpointing)
@@ -151,11 +151,6 @@ class EfficientNetLightning(LightningModule):
             for param in stage.parameters():
                 param.requires_grad = False
 
-        # Unfreeze last N layers from the back (last N stages)
-        if unfreeze_layers > 0:
-            for stage in self.model.stages[-unfreeze_layers:]:
-                for param in stage.parameters():
-                    param.requires_grad = True
 
         # Define loss function and metrics
         self.criterion = nn.CrossEntropyLoss()

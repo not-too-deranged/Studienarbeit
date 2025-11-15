@@ -82,7 +82,6 @@ def prepare_data(hparams):
     root="./data", train=False, transform=transform_test, download=True
     )
 
-
     # Download Places365 dataset for third test case
     """
     train_val_dataset = torchvision.datasets.Places365(
@@ -193,21 +192,33 @@ def objective(trial):
     dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
     weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-1, log=True)
     unfreeze_layers = trial.suggest_int("unfreeze_layers", 0, 6)  # Added
+
     config = [
-    [trial.suggest_int("stage1_blocks", 1, 5), 32, 32, 1, 3, 1, 0.25, True],  # Vary blocks in stage 1 could be done for more
-                [2, 32, 32, 1, 3, 1, 0.25, True],   # Stage 1
-                [4, 32, 64, 4, 3, 2, 0.25, True],   # Stage 2
-                [4, 64, 96, 4, 3, 2, 0.25, True],   # Stage 3
-                [6, 96, 192, 4, 3, 2, 0.25, False], # Stage 4
-                [9, 192, 224, 6, 3, 1, 0.25, False],# Stage 5
-                [15, 224, 384, 6, 3, 2, 0.25, False]# Stage 6
-            ]
+    trial.suggest_int("stage1_repeats", 1, 4),
+    trial.suggest_int("stage2_repeats", 2, 6),
+    trial.suggest_int("stage3_repeats", 2, 6),
+    trial.suggest_int("stage4_repeats", 3, 8),
+    trial.suggest_int("stage5_repeats", 4, 10),
+    trial.suggest_int("stage6_repeats", 6, 16)
+]
+
+
+    stages = [
+    [config[0], 32, 32, 1, 3, 1, 0.25, True],
+    [config[1], 32, 64, 4, 3, 2, 0.25, True],
+    [config[2], 64, 96, 4, 3, 2, 0.25, True],
+    [config[3], 96, 192, 4, 3, 2, 0.25, False],
+    [config[4], 192, 224, 6, 3, 1, 0.25, False],
+    [config[5], 224, 384, 6, 3, 2, 0.25, False]
+]
+
+
+
     model = EfficientNetLightning(
         learning_rate=learning_rate,
         dropout_rate=dropout_rate,
         weight_decay=weight_decay,
-        unfreeze_layers=unfreeze_layers,
-        config=config
+        config=stages
     )
 
     train_loader, val_loader, _ = prepare_data(hparams)
@@ -237,7 +248,7 @@ def run_optuna_study(n_trials=10):
         output_dir="./emission_logs",
         measure_power_secs=15
     )
-    tracker.start()
+    #tracker.start()
     start_time = time.time()
 
     study = optuna.create_study(direction="maximize", study_name="efficientnet_cifar100_unfreeze")

@@ -1,6 +1,5 @@
 import json
 import multiprocessing
-import random
 import time
 
 import optuna
@@ -15,20 +14,22 @@ from optuna.integration import PyTorchLightningPruningCallback
 from torch.utils.data import DataLoader
 
 import model_options
-from FilteredPlaces365 import FilteredPlaces365
-from c1_pretrained_CNN import EfficientNetLightning
+from selftrained_sanity_check_CNN import EfficientNetLightning
 from compute_cost_logger import ComputeCostLogger
 
 
 class Hparams:
 
-    def __init__(self, batch_size = model_options.BATCH_SIZE, initial_lr = model_options.INITIAL_LR, num_epochs = model_options.NUM_EPOCHS,
-              max_epochs_lr_finder = model_options.MAX_EPOCHS_LR_FINDER, patience = model_options.PATIENCE,
-              num_workers = model_options.NUM_WORKERS, padding = model_options.PADDING, input_size = model_options.INPUT_SIZE,
-              logging_steps = model_options.LOGGING_STEPS, log_dir = model_options.LOG_DIR, dropout_rate = model_options.DROPOUT_RATE,
-              unfreeze_layers = model_options.UNFREEZE_LAYERS, weight_decay = model_options.WEIGHT_DECAY,
-                 log_dir_optuna = model_options.LOG_DIR_OPTUNA, checkpoint_dir = model_options.CHECKPOINT_DIR,
-                 modelname = model_options.MODELNAME, runname = model_options.RUNNAME):
+    def __init__(self, batch_size=model_options.BATCH_SIZE, initial_lr=model_options.INITIAL_LR,
+                 num_epochs=model_options.NUM_EPOCHS,
+                 max_epochs_lr_finder=model_options.MAX_EPOCHS_LR_FINDER, patience=model_options.PATIENCE,
+                 num_workers=model_options.NUM_WORKERS, padding=model_options.PADDING,
+                 input_size=model_options.INPUT_SIZE,
+                 logging_steps=model_options.LOGGING_STEPS, log_dir=model_options.LOG_DIR,
+                 dropout_rate=model_options.DROPOUT_RATE,
+                 unfreeze_layers=model_options.UNFREEZE_LAYERS, weight_decay=model_options.WEIGHT_DECAY,
+                 log_dir_optuna=model_options.LOG_DIR_OPTUNA, checkpoint_dir=model_options.CHECKPOINT_DIR,
+                 modelname=model_options.MODELNAME, runname=model_options.RUNNAME):
         self.BATCH_SIZE = batch_size
         self.INITIAL_LR = initial_lr
         self.NUM_EPOCHS = num_epochs
@@ -49,7 +50,6 @@ class Hparams:
 
 
 def prepare_data(hparams):
-
     transform_train = transforms.Compose([
         transforms.Resize(hparams.INPUT_SIZE),
         transforms.RandomHorizontalFlip(),
@@ -74,9 +74,8 @@ def prepare_data(hparams):
     # Download datasets
     # ============================================================
 
-
     # Download the CIFAR-100 dataset
-    """
+    #"""
     train_val_dataset = torchvision.datasets.CIFAR100(
         root="./data", train=True, transform=transform_train, download=True
     )
@@ -84,49 +83,32 @@ def prepare_data(hparams):
     test_dataset = torchvision.datasets.CIFAR100(
     root="./data", train=False, transform=transform_test, download=True
     )
-    """
-
+    #"""
 
     # Download Places365 dataset for third test case
-    #"""
-    ALL_CLASSES = list(range(365))
-    random.seed(1234)
-    SELECTED_150 = sorted(random.sample(ALL_CLASSES, 150))
-
-    train_dataset = FilteredPlaces365(
-        root="./data",
-        split="train-standard",
-        selected_classes=SELECTED_150,
-        transform=transform_train
-    )
-
-    pass
-
-
-
+    """
     print("loading data")
     train_dataset = torchvision.datasets.Places365(
         root="./data", split="train-standard", transform=transform_train, download=True, small=True
     )
     print("loaded train")
 
-    #places 365 has a val dataset
+    # places 365 has a val dataset
     val_dataset = torchvision.datasets.Places365(
         root="./data", split="val", transform=transform_train, download=True, small=True
     )
     print("loaded val")
 
     test_dataset = torchvision.datasets.Places365(
-    root="./data", split="test", transform=transform_test, download=True, small=True
+        root="./data", split="test", transform=transform_test, download=True, small=True
     )
     print("loaded test")
-    #"""
-
+    # """
 
     # load cat dataset: https://github.com/Aml-Hassan-Abd-El-hamid/datasets
 
     """
-    
+
     train_val_dataset = torchvision.datasets.ImageFolder(
         root="./data/cat-dataset/train", transform=transform_train
     )
@@ -137,11 +119,9 @@ def prepare_data(hparams):
     #"""
 
     # Split train/val properly (80/20 split)
-    #train_size = int(0.8 * len(train_val_dataset))
-    #val_size = len(train_val_dataset) - train_size
-    #train_dataset, val_dataset = torch.utils.data.random_split(train_val_dataset, [train_size, val_size])
-
-
+    train_size = int(0.8 * len(train_val_dataset))
+    val_size = len(train_val_dataset) - train_size
+    train_dataset, val_dataset = torch.utils.data.random_split(train_val_dataset, [train_size, val_size])
 
     # DataLoaders allow batching and shuffling
     # Set NUM_WORKERS=0 for compatibility with freeze support (e.g., PyInstaller executables)
@@ -181,8 +161,8 @@ def main(hparams):
     )
 
     # Initialize the model
-    model = EfficientNetLightning(learning_rate = hparams.INITIAL_LR, weight_decay=hparams.WEIGHT_DECAY,
-                                  dropout_rate=hparams.DROPOUT_RATE, unfreeze_layers=hparams.UNFREEZE_LAYERS)
+    model = EfficientNetLightning(learning_rate=hparams.INITIAL_LR, weight_decay=hparams.WEIGHT_DECAY,
+                                  dropout_rate=hparams.DROPOUT_RATE)
 
     # ============================================================
     # FULL TRAINING WITH EARLY STOPPING + CHECKPOINTING
@@ -191,7 +171,8 @@ def main(hparams):
     trainer = Trainer(
         max_epochs=hparams.NUM_EPOCHS,
         accelerator="auto",
-        callbacks=[ComputeCostLogger(output_dir="emission_logs_c3_pretrained"), early_stop_callback, checkpoint_callback],
+        callbacks=[ComputeCostLogger(output_dir="emission_logs_c3_pretrained"), early_stop_callback,
+                   checkpoint_callback],
         logger=tb_logger,
         log_every_n_steps=hparams.LOGGING_STEPS,
     )
@@ -218,7 +199,6 @@ def objective(trial):
     hparams = Hparams(log_dir_optuna="lightning_logs_optuna_c3_pretrained")
 
     # Hyperparameters to optimize
-    unfreeze_layers = trial.suggest_int("unfreeze_layers", 0, 8)
     learning_rate = trial.suggest_float("learning_rate", 1e-6, 1e-2)
     dropout_rate = trial.suggest_float("dropout_rate", 0.05, 0.5)
     weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-1)
@@ -226,7 +206,6 @@ def objective(trial):
     model = EfficientNetLightning(
         learning_rate=learning_rate,
         dropout_rate=dropout_rate,
-        unfreeze_layers=unfreeze_layers,
         weight_decay=weight_decay
     )
 
@@ -251,6 +230,7 @@ def objective(trial):
     val_acc = trainer.callback_metrics.get("acc/val")
     return val_acc.item() if val_acc is not None else 0.0
 
+
 def run_optuna_study(n_trials=10):
     """
     tracker = EmissionsTracker(
@@ -272,30 +252,26 @@ def run_optuna_study(n_trials=10):
     print(f"  Value (val_acc): {trial.value:.4f}")
     print(f"  Params: {trial.params}")
 
-    total_emissions = tracker.stop()
     duration = time.time() - start_time
-    print("\n=== OPTUNA STUDY COST SUMMARY ===")
-    print(f"Total time: {duration / 60:.2f} min")
-    print(f"Total energy: {tracker.final_emissions_data.energy_consumed:.3f} kWh")
-    print(f"Total CO2: {total_emissions:.6f} kg")
+    print(f" Time: {duration}")
 
     return trial
 
 
 if __name__ == '__main__':
-
     torch.set_float32_matmul_precision('high')
     multiprocessing.freeze_support()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    best_trial = run_optuna_study(n_trials = 40)
+    best_trial = run_optuna_study(n_trials=10)
     best_params = best_trial.params
     print(f"the best parameters are: {best_params}")
-    with open("best_parameters.json", "w") as f:
+    with open("best_parameters_sanity_check_c1.json", "w") as f:
         json.dump(best_params, f)
 
     hparams = Hparams(dropout_rate=best_params["dropout_rate"], initial_lr=best_params["learning_rate"],
-                      unfreeze_layers=best_params["unfreeze_layers"], weight_decay=best_params["weight_decay"],
-                      checkpoint_dir = "c3_pretrained_checkpoints", modelname = "efficientnet_cats_pretrained",
-                      runname = "c3_pretrained")
+                      weight_decay=best_params["weight_decay"],
+                      checkpoint_dir="c1_selftrained_sanity_check_checkpoints", modelname="efficientnet_cifar_sanity_selftrained",
+                      runname="c1_pretrained")
     main(hparams)
+    #TODO cross validate that self built version works similar

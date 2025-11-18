@@ -81,3 +81,11 @@ _Training of Network with Tuned Hyperparameters_
 - Training complete in 31.26 min
 - Max GPU memory: 13.02 GB
 - Total energy: 0.167 kWh
+
+## Test Results 18.11. CIFAR-100 sanity-check
+**parameters:**
+- {'learning_rate': 0.001572222062812689, 'dropout_rate': 0.2106854604258504, 'weight_decay': 0.09620862174008252}
+
+**Test Metrics:**
+- acc/test 0.6290000081062317
+- loss/test 1.4781690835952759

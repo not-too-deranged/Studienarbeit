@@ -86,20 +86,29 @@ def prepare_data(hparams):
 
 
     # Download Places365 dataset for third test case
-    """
-    train_val_dataset = torchvision.datasets.Places365(
-        root="./data", split="train", transform=transform_train, download=True
+    #"""
+    print("loading data")
+    train_dataset = torchvision.datasets.Places365(
+        root="./data", split="train-standard", transform=transform_train, download=True, small=True
     )
+    print("loaded train")
+
+    #places 365 has a val dataset
+    val_dataset = torchvision.datasets.Places365(
+        root="./data", split="val", transform=transform_train, download=True, small=True
+    )
+    print("loaded val")
 
     test_dataset = torchvision.datasets.Places365(
-    root="./data", split="test", transform=transform_test, download=True
+    root="./data", split="test", transform=transform_test, download=True, small=True
     )
-    """
+    print("loaded test")
+    #"""
 
 
     # load cat dataset: https://github.com/Aml-Hassan-Abd-El-hamid/datasets
 
-    #"""
+    """
     
     train_val_dataset = torchvision.datasets.ImageFolder(
         root="./data/cat-dataset/train", transform=transform_train
@@ -111,9 +120,9 @@ def prepare_data(hparams):
     #"""
 
     # Split train/val properly (80/20 split)
-    train_size = int(0.8 * len(train_val_dataset))
-    val_size = len(train_val_dataset) - train_size
-    train_dataset, val_dataset = torch.utils.data.random_split(train_val_dataset, [train_size, val_size])
+    #train_size = int(0.8 * len(train_val_dataset))
+    #val_size = len(train_val_dataset) - train_size
+    #train_dataset, val_dataset = torch.utils.data.random_split(train_val_dataset, [train_size, val_size])
 
 
 
@@ -165,7 +174,7 @@ def main(hparams):
     trainer = Trainer(
         max_epochs=hparams.NUM_EPOCHS,
         accelerator="auto",
-        callbacks=[ComputeCostLogger(output_dir="emission_logs_c2_pretrained"), early_stop_callback, checkpoint_callback],
+        callbacks=[ComputeCostLogger(output_dir="emission_logs_c3_pretrained"), early_stop_callback, checkpoint_callback],
         logger=tb_logger,
         log_every_n_steps=hparams.LOGGING_STEPS,
     )
@@ -189,7 +198,7 @@ def main(hparams):
 
 
 def objective(trial):
-    hparams = Hparams(log_dir_optuna="lightning_logs_optuna_c2_pretrained")
+    hparams = Hparams(log_dir_optuna="lightning_logs_optuna_c3_pretrained")
 
     # Hyperparameters to optimize
     unfreeze_layers = trial.suggest_int("unfreeze_layers", 0, 8)
@@ -226,15 +235,19 @@ def objective(trial):
     return val_acc.item() if val_acc is not None else 0.0
 
 def run_optuna_study(n_trials=10):
+    """
     tracker = EmissionsTracker(
         project_name="optuna_tuning",
-        output_dir="./emission_logs_c2_pretrained",
+        output_dir="./emission_logs_c3_pretrained",
         measure_power_secs=15
     )
     tracker.start()
+
+    """
+
     start_time = time.time()
 
-    study = optuna.create_study(direction="maximize", study_name="efficientnet_cats_unfreeze")
+    study = optuna.create_study(direction="maximize", study_name="efficientnet_places_unfreeze")
     study.optimize(objective, n_trials=n_trials)
 
     print("\nBest trial:")
@@ -266,6 +279,6 @@ if __name__ == '__main__':
 
     hparams = Hparams(dropout_rate=best_params["dropout_rate"], initial_lr=best_params["learning_rate"],
                       unfreeze_layers=best_params["unfreeze_layers"], weight_decay=best_params["weight_decay"],
-                      checkpoint_dir = "c2_pretrained_checkpoints", modelname = "efficientnet_cats_pretrained",
-                      runname = "c2_pretrained")
+                      checkpoint_dir = "c3_pretrained_checkpoints", modelname = "efficientnet_cats_pretrained",
+                      runname = "c3_pretrained")
     main(hparams)

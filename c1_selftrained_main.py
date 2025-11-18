@@ -30,7 +30,7 @@ class Hparams:
               max_epochs_lr_finder = model_options.MAX_EPOCHS_LR_FINDER, patience = model_options.PATIENCE,
               num_workers = model_options.NUM_WORKERS, padding = model_options.PADDING, input_size = model_options.INPUT_SIZE,
               logging_steps = model_options.LOGGING_STEPS, log_dir = model_options.LOG_DIR, dropout_rate = model_options.DROPOUT_RATE,
-              unfreeze_layers = model_options.UNFREEZE_LAYERS, weight_decay = model_options.WEIGHT_DECAY):
+              unfreeze_layers = model_options.UNFREEZE_LAYERS, weight_decay = model_options.WEIGHT_DECAY, stages = model_options.STAGES):
         self.BATCH_SIZE = batch_size
         self.INITIAL_LR = initial_lr
         self.NUM_EPOCHS = num_epochs
@@ -44,6 +44,7 @@ class Hparams:
         self.DROPOUT_RATE = dropout_rate
         self.UNFREEZE_LAYERS = unfreeze_layers
         self.WEIGHT_DECAY = weight_decay
+        self.STAGES = stages
 
 
 def prepare_data(hparams):
@@ -74,6 +75,7 @@ def prepare_data(hparams):
 
 
     # Download the CIFAR-100 dataset
+    """
     train_val_dataset = torchvision.datasets.CIFAR100(
         root="./data", train=True, transform=transform_train, download=True
     )
@@ -81,6 +83,8 @@ def prepare_data(hparams):
     test_dataset = torchvision.datasets.CIFAR100(
     root="./data", train=False, transform=transform_test, download=True
     )
+    """
+
 
     # Download Places365 dataset for third test case
     """
@@ -96,16 +100,16 @@ def prepare_data(hparams):
 
     # load cat dataset: https://github.com/Aml-Hassan-Abd-El-hamid/datasets
 
-    """
+    #"""
     
     train_val_dataset = torchvision.datasets.ImageFolder(
-        root="./data/cat_data/train", transform=transform_train
+        root="./data/cat-dataset/train", transform=transform_train
     )
 
-    train_val_dataset = torchvision.datasets.ImageFolder(
-        root="./data/cat_data/val", transform=transform_test
+    test_dataset = torchvision.datasets.ImageFolder(
+        root="./data/cat-dataset/test", transform=transform_test
     )
-    """
+    #"""
 
     # Split train/val properly (80/20 split)
     train_size = int(0.8 * len(train_val_dataset))
@@ -153,7 +157,7 @@ def main(hparams):
 
     # Initialize the model
     model = EfficientNetLightning(learning_rate = hparams.INITIAL_LR, weight_decay=hparams.WEIGHT_DECAY,
-                                  dropout_rate=hparams.DROPOUT_RATE, unfreeze_layers=hparams.UNFREEZE_LAYERS)
+                                  dropout_rate=hparams.DROPOUT_RATE, config=hparams.STAGES)
 
     # ============================================================
     # FULL TRAINING WITH EARLY STOPPING + CHECKPOINTING
@@ -191,7 +195,6 @@ def objective(trial):
     learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-1, log=True)
     dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
     weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-1, log=True)
-    unfreeze_layers = trial.suggest_int("unfreeze_layers", 0, 6)  # Added
 
     config = [
     trial.suggest_int("stage1_repeats", 1, 4),
@@ -245,7 +248,7 @@ def objective(trial):
 def run_optuna_study(n_trials=10):
     tracker = EmissionsTracker(
         project_name="optuna_tuning",
-        output_dir="./emission_logs",
+        output_dir="./emission_logs_c2_selftrained",
         measure_power_secs=15
     )
     #tracker.start()
@@ -263,8 +266,6 @@ def run_optuna_study(n_trials=10):
     duration = time.time() - start_time
     print("\n=== OPTUNA STUDY COST SUMMARY ===")
     print(f"Total time: {duration / 60:.2f} min")
-    print(f"Total energy: {tracker.final_emissions_data.energy_consumed:.3f} kWh")
-    print(f"Total CO2: {total_emissions:.6f} kg")
 
     return trial
 
@@ -277,10 +278,20 @@ if __name__ == '__main__':
 
     best_trial = run_optuna_study(n_trials = 20)
     best_params = best_trial.params
+
     print(f"the best parameters are: {best_params}")
     with open("best_parameters.json", "w") as f:
         json.dump(best_params, f)
 
+    stages = [
+        [best_params["stage1_repeats"], 32, 32, 1, 3, 1, 0.25, True],
+        [best_params["stage2_repeats"], 32, 64, 4, 3, 2, 0.25, True],
+        [best_params["stage3_repeats"], 64, 96, 4, 3, 2, 0.25, True],
+        [best_params["stage4_repeats"], 96, 192, 4, 3, 2, 0.25, False],
+        [best_params["stage5_repeats"], 192, 224, 6, 3, 1, 0.25, False],
+        [best_params["stage6_repeats"], 224, 384, 6, 3, 2, 0.25, False]
+    ]
+
     hparams = Hparams(dropout_rate=best_params["dropout_rate"], initial_lr=best_params["learning_rate"],
-                      unfreeze_layers=best_params["unfreeze_layers"], weight_decay=best_params["weight_decay"])
+                      stages=stages, weight_decay=best_params["weight_decay"])
     main(hparams)

@@ -146,10 +146,10 @@ class EfficientNetLightning(LightningModule):
 
         # Freeze feature extractor layers (stem and stages)
         for param in self.model.stem.parameters():
-            param.requires_grad = False
+            param.requires_grad = True
         for stage in self.model.stages:
             for param in stage.parameters():
-                param.requires_grad = False
+                param.requires_grad = True
 
 
         # Define loss function and metrics

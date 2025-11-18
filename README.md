@@ -10,7 +10,7 @@ Epoch [8/10], Loss: 0.3404, Validation Accuracy: 0.7171 <br>
 Epoch [9/10], Loss: 0.2737, Validation Accuracy: 0.7154 <br>
 Epoch [10/10], Loss: 0.2123, Validation Accuracy: 0.7045 <br>
 
-## Test Results 08.10. CIFAR-100 Pre-Trained:
+## Test Results 08.11. CIFAR-100 Pre-Trained:
 
 **Parameters:**
 - dropout_rate: 0.2903538439232585
@@ -37,3 +37,47 @@ _Training of Network with Tuned Hyperparameters_
   - Energy consumed for All CPU : 0.033260 kWh
   - Energy consumed for all GPUs : 0.202614 kWh
 - Estimated CO2 emissions: 0.109554 kg
+
+## Test Results 11.11. CIFAR-100 Pre-Trained:
+**Parameters:**
+- dropout_rate: 0.36466173895931375
+- learning_rate: 0.0009032932923923763
+- unfreeze_layers: 6
+- weight_decay: 0.08867092775630593
+
+**Test Metrics**
+- TODO
+
+**Resources hunger metrics** \
+_Optuna hyperparameter search_
+Total time: 120.62 min
+Total energy: 0.539 kWh
+Total CO2: 0.205520 kg
+Energy consumed for All CPU : 0.097856 kWh
+Energy consumed for all GPUs : 0.305809 kWh
+
+_Training of Network with Tuned Hyperparameters_
+Training complete in 7.59 min
+Max GPU memory: 32.92 GB
+Estimated CO2 emissions: 0.013710 kg
+Total energy: 0.036 kWh
+
+## Test Results 17.11. CIFAR-100 Self-Trained:
+**Parameters:**
+- dropout_rate: 0.48645517619542167
+- learning_rate: 0.002913637707010568
+- weight_decay: 0.04241168576887874
+- 'stage1_repeats': 2, 'stage2_repeats': 2, 'stage3_repeats': 4, 'stage4_repeats': 5, 'stage5_repeats': 8, 'stage6_repeats': 6
+
+**Test Metrics**
+- acc/test: 0.6345999836921692 
+- loss/test: 1.4687973260879517
+
+**Resources hunger metrics** \
+_Optuna hyperparameter search_
+- Total time: ?
+
+_Training of Network with Tuned Hyperparameters_
+- Training complete in 31.26 min
+- Max GPU memory: 13.02 GB
+- Total energy: 0.167 kWh

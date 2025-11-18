@@ -15,12 +15,20 @@ WEIGHT_DECAY = 1e-4
 DROPOUT_RATE = 0.2
 NUM_CLASSES = 100
 STEM_STRIDE = 2  # stride for the initial conv layer
-LOG_DIR = "lightning_logs"
-LOG_DIR_OPTUNA = "lightning_logs_optuna_c2_pretrained"
+LOG_DIR = "lightning_logs_c2_selftrained"
+LOG_DIR_OPTUNA = "lightning_logs_optuna_c2_selftrained"
 UNFREEZE_LAYERS = 0
-CHECKPOINT_DIR = "c2_pretrained_checkpoints"
-MODELNAME = "efficientnet_cats_pretrained"
-RUNNAME = "c2_pretrained"
+CHECKPOINT_DIR = "c2_selftrained_checkpoints"
+MODELNAME = "efficientnet_places_pretrained"
+RUNNAME = "c2_selftrained"
+STAGES = [
+    [1, 32, 32, 1, 3, 1, 0.25, True],
+    [2, 32, 64, 4, 3, 2, 0.25, True],
+    [3, 64, 96, 4, 3, 2, 0.25, True],
+    [4, 96, 192, 4, 3, 2, 0.25, False],
+    [5, 192, 224, 6, 3, 1, 0.25, False],
+    [6, 224, 384, 6, 3, 2, 0.25, False]
+]
 
 
 #tensorboard --logdir /path/to/lightning_logs

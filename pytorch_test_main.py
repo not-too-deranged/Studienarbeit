@@ -31,7 +31,7 @@ class Hparams:
                  dropout_rate=model_options.DROPOUT_RATE,
                  unfreeze_layers=model_options.UNFREEZE_LAYERS, weight_decay=model_options.WEIGHT_DECAY,
                  log_dir_optuna=model_options.LOG_DIR_OPTUNA, checkpoint_dir=model_options.CHECKPOINT_DIR,
-                 modelname=model_options.MODELNAME, runname=model_options.RUNNAME):
+                 modelname=model_options.MODELNAME, runname=model_options.RUNNAME, num_layers=model_options.NUM_LAYERS):
         self.BATCH_SIZE = batch_size
         self.INITIAL_LR = initial_lr
         self.NUM_EPOCHS = num_epochs
@@ -49,6 +49,7 @@ class Hparams:
         self.CHECKPOINT_DIR = checkpoint_dir
         self.MODELNAME = modelname
         self.RUNNAME = runname
+        self.NUM_LAYERS = num_layers
 
 
 def prepare_data(hparams):
@@ -218,10 +219,21 @@ def objective(trial):
     dropout_rate = trial.suggest_float("dropout_rate", 0.05, 0.5)
     weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-1)
 
+    num_layers = [
+        trial.suggest_int("stage1_repeats", 1, 4),
+        trial.suggest_int("stage2_repeats", 2, 6),
+        trial.suggest_int("stage3_repeats", 2, 6),
+        trial.suggest_int("stage4_repeats", 3, 8),
+        trial.suggest_int("stage5_repeats", 4, 10),
+        trial.suggest_int("stage6_repeats", 6, 16),
+        trial.suggest_int("stage7_repeats", 8, 18)
+    ]
+
     model = EfficientNetLightning(
         learning_rate=learning_rate,
         dropout_rate=dropout_rate,
-        weight_decay=weight_decay
+        weight_decay=weight_decay,
+        num_layers=num_layers
     )
 
     train_loader, val_loader, _ = prepare_data(hparams)
@@ -284,8 +296,18 @@ if __name__ == '__main__':
     with open("best_parameters_sanity_check_c1.json", "w") as f:
         json.dump(best_params, f)
 
+    num_layers = [
+        best_params["stage1_repeats"],
+        best_params["stage2_repeats"],
+        best_params["stage3_repeats"],
+        best_params["stage4_repeats"],
+        best_params["stage5_repeats"],
+        best_params["stage6_repeats"],
+        best_params["stag7_repeats"]
+    ]
+
     hparams = Hparams(dropout_rate=best_params["dropout_rate"], initial_lr=best_params["learning_rate"],
-                      weight_decay=best_params["weight_decay"],
+                      weight_decay=best_params["weight_decay"], num_layers=num_layers,
                       checkpoint_dir="c1_selftrained_sanity_check_checkpoints", modelname="efficientnet_cifar_sanity_selftrained",
                       runname="c1_pretrained")
     main(hparams)

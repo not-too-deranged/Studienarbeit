@@ -90,7 +90,7 @@ def prepare_data(hparams):
 
 
     # Download Places365 dataset for third test case
-    #"""
+    """
     ALL_CLASSES = list(range(365))
     random.seed(1234)
     SELECTED_150 = sorted(random.sample(ALL_CLASSES, 150))
@@ -225,7 +225,8 @@ def objective(trial):
     trial.suggest_int("stage3_repeats", 2, 6),
     trial.suggest_int("stage4_repeats", 3, 8),
     trial.suggest_int("stage5_repeats", 4, 10),
-    trial.suggest_int("stage6_repeats", 6, 16)
+    trial.suggest_int("stage6_repeats", 6, 16),
+    trial.suggest_int("stage7_repeats", 8, 18)
 ]
 
 
@@ -235,7 +236,8 @@ def objective(trial):
     [config[2], 64, 96, 4, 3, 2, 0.25, True],
     [config[3], 96, 192, 4, 3, 2, 0.25, False],
     [config[4], 192, 224, 6, 3, 1, 0.25, False],
-    [config[5], 224, 384, 6, 3, 2, 0.25, False]
+    [config[5], 224, 384, 6, 3, 2, 0.25, False],
+    [config[6], 384, 640, 6, 3, 1, 0.25, False]
 ]
 
 
@@ -299,6 +301,7 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    """
     best_trial = run_optuna_study(n_trials = 20)
     best_params = best_trial.params
 
@@ -312,9 +315,16 @@ if __name__ == '__main__':
         [best_params["stage3_repeats"], 64, 96, 4, 3, 2, 0.25, True],
         [best_params["stage4_repeats"], 96, 192, 4, 3, 2, 0.25, False],
         [best_params["stage5_repeats"], 192, 224, 6, 3, 1, 0.25, False],
-        [best_params["stage6_repeats"], 224, 384, 6, 3, 2, 0.25, False]
+        [best_params["stage6_repeats"], 224, 384, 6, 3, 2, 0.25, False],
+        [best_params["stag7_repeats"], 384, 640, 6, 3, 1, 0.25, False]
     ]
+    #"""
 
+    #sanity check of the sanity check
+    best_params = {'learning_rate': 0.001572222062812689, 'dropout_rate': 0.2106854604258504, 'weight_decay': 0.09620862174008252}
     hparams = Hparams(dropout_rate=best_params["dropout_rate"], initial_lr=best_params["learning_rate"],
-                      stages=stages, weight_decay=best_params["weight_decay"])
+                      weight_decay=best_params["weight_decay"])
+
+    #hparams = Hparams(dropout_rate=best_params["dropout_rate"], initial_lr=best_params["learning_rate"],
+    #                  stages=stages, weight_decay=best_params["weight_decay"])
     main(hparams)

@@ -340,19 +340,19 @@ def _efficientnet(
 
 
 def _efficientnet_conf(
-    arch: str,
+    arch: str, num_layers,
     **kwargs: Any,
 ) -> tuple[Sequence[Union[MBConvConfig, FusedMBConvConfig]], Optional[int]]:
     inverted_residual_setting: Sequence[Union[MBConvConfig, FusedMBConvConfig]]
     if arch.startswith("efficientnet_v2_l_new"):
         inverted_residual_setting = [
-            FusedMBConvConfig(1, 3, 1, 32, 32, 4),
-            FusedMBConvConfig(4, 3, 2, 32, 64, 7),
-            FusedMBConvConfig(4, 3, 2, 64, 96, 7),
-            MBConvConfig(4, 3, 2, 96, 192, 10),
-            MBConvConfig(6, 3, 1, 192, 224, 19),
-            MBConvConfig(6, 3, 2, 224, 384, 25),
-            MBConvConfig(6, 3, 1, 384, 640, 7),
+            FusedMBConvConfig(1, 3, 1, 32, 32, num_layers[0]),
+            FusedMBConvConfig(4, 3, 2, 32, 64, num_layers[1]),
+            FusedMBConvConfig(4, 3, 2, 64, 96, num_layers[2]),
+            MBConvConfig(4, 3, 2, 96, 192, num_layers[3]),
+            MBConvConfig(6, 3, 1, 192, 224, num_layers[4]),
+            MBConvConfig(6, 3, 2, 224, 384, num_layers[5]),
+            MBConvConfig(6, 3, 1, 384, 640, num_layers[6]),
         ]
         last_channel = 1280
     else:
@@ -363,7 +363,7 @@ def _efficientnet_conf(
 @register_model()
 #@handle_legacy_interface(weights=None)
 def efficientnet_v2_l_new(
-    *, weights = None, progress: bool = True, **kwargs: Any
+    *, weights = None, progress: bool = True, num_layers, **kwargs: Any
 ) -> EfficientNet:
     """
     Constructs an EfficientNetV2-L architecture from
@@ -385,7 +385,7 @@ def efficientnet_v2_l_new(
         :members:
     """
 
-    inverted_residual_setting, last_channel = _efficientnet_conf("efficientnet_v2_l_new")
+    inverted_residual_setting, last_channel = _efficientnet_conf("efficientnet_v2_l_new", num_layers)
     return _efficientnet(
         inverted_residual_setting,
         kwargs.pop("dropout", 0.4),

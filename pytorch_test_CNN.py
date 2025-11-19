@@ -15,14 +15,14 @@ class EfficientNetLightning(LightningModule):
     """
 
     def __init__(self, learning_rate=model_options.INITIAL_LR, weight_decay=model_options.WEIGHT_DECAY,
-                 dropout_rate=model_options.DROPOUT_RATE):
+                 dropout_rate=model_options.DROPOUT_RATE, num_layers=model_options.NUM_LAYERS):
         super().__init__()
 
         # Save hyperparameters (for logging and checkpointing)
         self.save_hyperparameters()
 
         # Load EfficientNet with random weights
-        self.model = models.efficientnet_v2_l_new()
+        self.model = models.efficientnet_v2_l_new(num_layers=num_layers)
 
         # Replace the classifier layer for CIFAR-100 (100 classes)
         in_features = self.model.classifier[1].in_features

@@ -62,25 +62,26 @@ Max GPU memory: 32.92 GB
 Estimated CO2 emissions: 0.013710 kg
 Total energy: 0.036 kWh
 
-## Test Results 17.11. CIFAR-100 Self-Trained:
+## Test Results 19.11. CIFAR-100 Self-Trained:
 **Parameters:**
-- dropout_rate: 0.48645517619542167
-- learning_rate: 0.002913637707010568
-- weight_decay: 0.04241168576887874
-- 'stage1_repeats': 2, 'stage2_repeats': 2, 'stage3_repeats': 4, 'stage4_repeats': 5, 'stage5_repeats': 8, 'stage6_repeats': 6
+- dropout_rate: 0.20851117981575062
+- learning_rate: 0.00011924727458128405
+- weight_decay: 0.0001076705231213413
+- 'stage1_repeats': 2, 'stage2_repeats': 2, 'stage3_repeats': 3, 'stage4_repeats': 3, 'stage5_repeats': 7, 'stage6_repeats': 15}
 
 **Test Metrics**
-- acc/test: 0.6345999836921692 
-- loss/test: 1.4687973260879517
+- acc/test: 0.6456999778747559
+- loss/test: 1.498622179031372 
 
 **Resources hunger metrics** \
 _Optuna hyperparameter search_
-- Total time: ?
+- Total time: 164.88 min
 
 _Training of Network with Tuned Hyperparameters_
-- Training complete in 31.26 min
-- Max GPU memory: 13.02 GB
-- Total energy: 0.167 kWh
+- Training complete in 51.65 min
+- Max GPU memory: 26.97 GB
+- Estimated CO2 emissions: 0.110053 kg
+- Total energy: 0.289 kWh
 
 ## Test Results 18.11. CIFAR-100 sanity-check
 **parameters:**
@@ -89,3 +90,14 @@ _Training of Network with Tuned Hyperparameters_
 **Test Metrics:**
 - acc/test 0.6290000081062317
 - loss/test 1.4781690835952759
+
+## Test Results 19.11. CIFAR-100 sanity-check v2
+ (building on efficientnet_v2_l. Expecting same score as in sanity check 1, since same params were used)
+**parameters:**
+- {'learning_rate': 0.001572222062812689, 'dropout_rate': 0.2106854604258504, 'weight_decay': 0.09620862174008252}
+
+**Test Metrics:**
+- acc/test 0.6459000110626221 
+- loss/test 1.4370880126953125 
+
+

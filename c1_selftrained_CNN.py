@@ -170,14 +170,14 @@ class EfficientNetV2(nn.Module):
         self.stages = nn.ModuleList()
         in_channels = 32
         for stage_config in config:
-            blocks, in_channels, out_channels, expand_ratio, kernel_size, stride, se_ratio, fused = stage_config
+            blocks, in_ch, out_channels, expand_ratio, kernel_size, stride, se_ratio, fused = stage_config
             stage = []
             for i in range(blocks):
                 stride = stride if i == 0 else 1
                 if fused:
-                    stage.append(FusedMBConv(in_channels, out_channels, expand_ratio, kernel_size, stride, se_ratio, drop_path=model_options.DROPOUT_RATE))
+                    stage.append(FusedMBConv(in_channels, out_channels, expand_ratio, kernel_size, stride, se = 0.0, drop_path=0.0))
                 else:
-                    stage.append(UnfusedMBConv(in_channels, out_channels, expand_ratio, kernel_size, stride, se_ratio, drop_path=model_options.DROPOUT_RATE))
+                    stage.append(UnfusedMBConv(in_channels, out_channels, expand_ratio, kernel_size, stride, se_ratio, drop_path=0.0))
                 in_channels = out_channels  
             self.stages.append(nn.Sequential(*stage))
 

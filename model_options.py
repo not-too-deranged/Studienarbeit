@@ -22,12 +22,12 @@ CHECKPOINT_DIR = "c2_selftrained_checkpoints"
 MODELNAME = "efficientnet_places_pretrained"
 RUNNAME = "c2_selftrained"
 STAGES = [
-    [1, 32, 32, 1, 3, 1, 0.25, True],
-    [2, 32, 64, 4, 3, 2, 0.25, True],
-    [3, 64, 96, 4, 3, 2, 0.25, True],
-    [4, 96, 192, 4, 3, 2, 0.25, False],
-    [5, 192, 224, 6, 3, 1, 0.25, False],
-    [6, 224, 384, 6, 3, 2, 0.25, False]
+    [2, 32, 32, 1, 3, 1, 0.25, True],
+    [4, 32, 64, 4, 3, 2, 0.25, True],
+    [4, 64, 96, 4, 3, 2, 0.25, True],
+    [6, 96, 192, 4, 3, 2, 0.25, False],
+    [9, 192, 224, 6, 3, 1, 0.25, False],
+    [15, 224, 384, 6, 3, 2, 0.25, False]
 ]
 
 

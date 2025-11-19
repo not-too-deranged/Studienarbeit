@@ -175,7 +175,7 @@ class EfficientNetV2(nn.Module):
             for i in range(blocks):
                 stride = stride if i == 0 else 1
                 if fused:
-                    stage.append(FusedMBConv(in_channels, out_channels, expand_ratio, kernel_size, stride, se = 0.0, drop_path=0.0))
+                    stage.append(FusedMBConv(in_channels, out_channels, expand_ratio, kernel_size, stride, 0.0, drop_path=0.0))
                 else:
                     stage.append(UnfusedMBConv(in_channels, out_channels, expand_ratio, kernel_size, stride, se_ratio, drop_path=0.0))
                 in_channels = out_channels  

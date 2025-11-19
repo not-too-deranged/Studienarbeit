@@ -192,6 +192,7 @@ class EfficientNetV2(nn.Module):
             nn.Linear(1280, num_classes)
         )
 
+
     def forward(self, x):
         x = self.stem(x)
         for stage in self.stages:

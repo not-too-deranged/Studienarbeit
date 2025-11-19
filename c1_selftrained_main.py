@@ -1,4 +1,5 @@
 import json
+import random
 import time
 
 import optuna
@@ -19,6 +20,8 @@ import torchvision
 import torchvision.transforms as transforms
 from torchvision import models
 import multiprocessing
+
+import FilteredPlaces365
 from c1_selftrained_CNN import EfficientNetLightning
 import model_options
 from compute_cost_logger import ComputeCostLogger
@@ -75,7 +78,7 @@ def prepare_data(hparams):
 
 
     # Download the CIFAR-100 dataset
-    """
+    #"""
     train_val_dataset = torchvision.datasets.CIFAR100(
         root="./data", train=True, transform=transform_train, download=True
     )
@@ -83,24 +86,44 @@ def prepare_data(hparams):
     test_dataset = torchvision.datasets.CIFAR100(
     root="./data", train=False, transform=transform_test, download=True
     )
-    """
+    #"""
 
 
     # Download Places365 dataset for third test case
-    """
-    train_val_dataset = torchvision.datasets.Places365(
-        root="./data", split="train", transform=transform_train, download=True
-    )
+    #"""
+    ALL_CLASSES = list(range(365))
+    random.seed(1234)
+    SELECTED_150 = sorted(random.sample(ALL_CLASSES, 150))
 
-    test_val_dataset = torchvision.datasets.Places365(
-    root="./data", split="test", transform=transform_test, download=True
+    train_dataset = torchvision.datasets.Places365(
+        root="./data", split="train-standard", transform=transform_train,
+        download=True, small=True
     )
-    """
+    #dataset is reduced in size by only using 150 of the 365 classes
+    train_dataset = FilteredPlaces365.start_filter(train_dataset, SELECTED_150)
+
+    print("loaded train")
+
+    #places 365 has a val dataset
+    val_dataset = torchvision.datasets.Places365(
+        root="./data", split="val", transform=transform_train, download=True, small=True
+    )
+    # dataset is reduced in size by only using 150 of the 365 classes
+    val_dataset = FilteredPlaces365.start_filter(val_dataset, SELECTED_150)
+    print("loaded val")
+
+    test_dataset = torchvision.datasets.Places365(
+    root="./data", split="test", transform=transform_test, download=True, small=True
+    )
+    # dataset is reduced in size by only using 150 of the 365 classes
+    test_dataset = FilteredPlaces365.start_filter(test_dataset, SELECTED_150)
+    print("loaded test")
+    #"""
 
 
     # load cat dataset: https://github.com/Aml-Hassan-Abd-El-hamid/datasets
 
-    #"""
+    """
     
     train_val_dataset = torchvision.datasets.ImageFolder(
         root="./data/cat-dataset/train", transform=transform_train
@@ -248,7 +271,7 @@ def objective(trial):
 def run_optuna_study(n_trials=10):
     tracker = EmissionsTracker(
         project_name="optuna_tuning",
-        output_dir="./emission_logs_c2_selftrained",
+        output_dir="./emission_logs_c1_selftrained",
         measure_power_secs=15
     )
     #tracker.start()

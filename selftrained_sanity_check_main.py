@@ -1,5 +1,6 @@
 import json
 import multiprocessing
+import random
 import time
 
 import optuna
@@ -13,6 +14,7 @@ from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 from optuna.integration import PyTorchLightningPruningCallback
 from torch.utils.data import DataLoader
 
+import FilteredPlaces365
 import model_options
 from selftrained_sanity_check_CNN import EfficientNetLightning
 from compute_cost_logger import ComputeCostLogger
@@ -87,21 +89,34 @@ def prepare_data(hparams):
 
     # Download Places365 dataset for third test case
     """
+    ALL_CLASSES = list(range(365))
+    random.seed(1234)
+    SELECTED_150 = sorted(random.sample(ALL_CLASSES, 150))
+
     print("loading data")
+
     train_dataset = torchvision.datasets.Places365(
-        root="./data", split="train-standard", transform=transform_train, download=True, small=True
+        root="./data", split="train-standard", transform=transform_train,
+        download=True, small=True
     )
+    # dataset is reduced in size by only using 150 of the 365 classes
+    train_dataset = FilteredPlaces365.start_filter(train_dataset, SELECTED_150)
+
     print("loaded train")
 
     # places 365 has a val dataset
     val_dataset = torchvision.datasets.Places365(
         root="./data", split="val", transform=transform_train, download=True, small=True
     )
+    # dataset is reduced in size by only using 150 of the 365 classes
+    val_dataset = FilteredPlaces365.start_filter(val_dataset, SELECTED_150)
     print("loaded val")
 
     test_dataset = torchvision.datasets.Places365(
         root="./data", split="test", transform=transform_test, download=True, small=True
     )
+    # dataset is reduced in size by only using 150 of the 365 classes
+    test_dataset = FilteredPlaces365.start_filter(test_dataset, SELECTED_150)
     print("loaded test")
     # """
 

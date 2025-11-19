@@ -14,8 +14,8 @@ from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 from optuna.integration import PyTorchLightningPruningCallback
 from torch.utils.data import DataLoader
 
+import FilteredPlaces365
 import model_options
-from FilteredPlaces365 import FilteredPlaces365
 from c1_pretrained_CNN import EfficientNetLightning
 from compute_cost_logger import ComputeCostLogger
 
@@ -93,32 +93,30 @@ def prepare_data(hparams):
     random.seed(1234)
     SELECTED_150 = sorted(random.sample(ALL_CLASSES, 150))
 
-    train_dataset = FilteredPlaces365(
-        root="./data",
-        split="train-standard",
-        selected_classes=SELECTED_150,
-        transform=transform_train
-    )
-
-    pass
-
-
-
     print("loading data")
+
     train_dataset = torchvision.datasets.Places365(
-        root="./data", split="train-standard", transform=transform_train, download=True, small=True
+        root="./data", split="train-standard", transform=transform_train,
+        download=True, small=True
     )
+    #dataset is reduced in size by only using 150 of the 365 classes
+    train_dataset = FilteredPlaces365.start_filter(train_dataset, SELECTED_150)
+
     print("loaded train")
 
     #places 365 has a val dataset
     val_dataset = torchvision.datasets.Places365(
         root="./data", split="val", transform=transform_train, download=True, small=True
     )
+    # dataset is reduced in size by only using 150 of the 365 classes
+    val_dataset = FilteredPlaces365.start_filter(val_dataset, SELECTED_150)
     print("loaded val")
 
     test_dataset = torchvision.datasets.Places365(
     root="./data", split="test", transform=transform_test, download=True, small=True
     )
+    # dataset is reduced in size by only using 150 of the 365 classes
+    test_dataset = FilteredPlaces365.start_filter(test_dataset, SELECTED_150)
     print("loaded test")
     #"""
 
@@ -272,12 +270,9 @@ def run_optuna_study(n_trials=10):
     print(f"  Value (val_acc): {trial.value:.4f}")
     print(f"  Params: {trial.params}")
 
-    total_emissions = tracker.stop()
     duration = time.time() - start_time
     print("\n=== OPTUNA STUDY COST SUMMARY ===")
     print(f"Total time: {duration / 60:.2f} min")
-    print(f"Total energy: {tracker.final_emissions_data.energy_consumed:.3f} kWh")
-    print(f"Total CO2: {total_emissions:.6f} kg")
 
     return trial
 

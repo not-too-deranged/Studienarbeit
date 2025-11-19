@@ -1,21 +1,37 @@
-from torchvision.datasets import Places365
-from torch.utils.data import Dataset
+import torch
+from torch.utils.data import Subset
 
-class FilteredPlaces365(Dataset):
-    def __init__(self, root, split="train-standard", transform=None, selected_classes=None):
-        self.dataset = Places365(root=root, split=split, small=True, download=False, transform=transform)
-        self.selected = set(selected_classes)
 
-        # Filter indices of only desired classes
-        self.indices = [i for i, (_, y) in enumerate(self.dataset) if y in self.selected]
+class RemappedDataset(torch.utils.data.Dataset):
+    def __init__(self, subset, class_map):
+        """
+        subset: the Subset(dataset, indices)
+        class_map: dict mapping old_class : new_class (0..149)
+        """
+        self.subset = subset
+        self.class_map = class_map
 
     def __len__(self):
-        return len(self.indices)
+        return len(self.subset)
 
     def __getitem__(self, idx):
-        real_idx = self.indices[idx]
-        img, label = self.dataset[real_idx]
+        x, y = self.subset[idx]
+        y = self.class_map[y]   # remap old label : new label
+        return x, y
 
-        # Remap labels  to 0149
-        new_label = list(self.selected).index(label)
-        return img, new_label
+def start_filter(full_dataset, selected_classes):
+    # selected_classes is the list of selected class IDs (length selected_classes)
+    old_to_new = {old: new for new, old in enumerate(selected_classes)}
+
+    # Build mask
+    train_mask = torch.zeros(len(full_dataset), dtype=torch.bool)
+    for selected_class in selected_classes:
+        train_mask |= (torch.tensor(full_dataset.targets) == selected_class)
+
+    train_indices = train_mask.nonzero().reshape(-1)
+
+    # Build subset with original samples
+    train_subset = Subset(full_dataset, train_indices)
+
+    # Wrap with re-labeled dataset
+    return RemappedDataset(train_subset, old_to_new)

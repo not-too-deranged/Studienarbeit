@@ -14,8 +14,7 @@ class EfficientNetLightning(LightningModule):
     Handles training, validation, and optimization automatically.
     """
 
-    def __init__(self, learning_rate=model_options.INITIAL_LR, weight_decay=model_options.WEIGHT_DECAY,
-                 dropout_rate=model_options.DROPOUT_RATE):
+    def __init__(self, learning_rate, weight_decay, dropout_rate, num_classes):
         super().__init__()
 
         # Save hyperparameters (for logging and checkpointing)
@@ -27,7 +26,7 @@ class EfficientNetLightning(LightningModule):
         # Replace the classifier layer for CIFAR-100 (100 classes)
         in_features = self.model.classifier[1].in_features
         self.dropout = nn.Dropout(dropout_rate)
-        self.model.classifier[1] = nn.Linear(in_features, 100)
+        self.model.classifier[1] = nn.Linear(in_features, num_classes)
 
         # Freeze feature extractor layers
         for param in self.model.features.parameters():
@@ -35,9 +34,9 @@ class EfficientNetLightning(LightningModule):
 
         # Define loss function and metrics
         self.criterion = nn.CrossEntropyLoss()
-        self.train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=model_options.NUM_CLASSES)
-        self.val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=model_options.NUM_CLASSES)
-        self.test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=model_options.NUM_CLASSES)
+        self.train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=num_classes)
+        self.val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=num_classes)
+        self.test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=num_classes)
 
     def forward(self, x):
         """Forward pass (used for inference and validation)."""

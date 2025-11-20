@@ -16,6 +16,8 @@ from util_files import model_options
 from pytorch_test_CNN import EfficientNetLightning
 from compute_cost_logger import ComputeCostLogger
 
+from util_files.load_data import prepare_data
+
 
 class Hparams:
 
@@ -47,105 +49,6 @@ class Hparams:
         self.MODELNAME = modelname
         self.RUNNAME = runname
         self.NUM_LAYERS = num_layers
-
-
-def prepare_data(hparams):
-    transform_train = transforms.Compose([
-        transforms.Resize(hparams.INPUT_SIZE),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomCrop(hparams.INPUT_SIZE, padding=hparams.PADDING),
-        transforms.ToTensor(),
-        transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],  # ImageNet mean
-            std=[0.229, 0.224, 0.225]  # ImageNet std
-        ),
-    ])
-
-    transform_test = transforms.Compose([
-        transforms.Resize(hparams.INPUT_SIZE),
-        transforms.ToTensor(),
-        transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225]
-        ),
-    ])
-
-    # ============================================================
-    # Download datasets
-    # ============================================================
-
-    # Download the CIFAR-100 dataset
-    #"""
-    train_val_dataset = torchvision.datasets.CIFAR100(
-        root="./data", train=True, transform=transform_train, download=True
-    )
-
-    test_dataset = torchvision.datasets.CIFAR100(
-    root="./data", train=False, transform=transform_test, download=True
-    )
-    #"""
-
-    # Download Places365 dataset for third test case
-    """
-    ALL_CLASSES = list(range(365))
-    random.seed(1234)
-    SELECTED_150 = sorted(random.sample(ALL_CLASSES, 150))
-
-    print("loading data")
-
-    train_dataset = torchvision.datasets.Places365(
-        root="./data", split="train-standard", transform=transform_train,
-        download=True, small=True
-    )
-    # dataset is reduced in size by only using 150 of the 365 classes
-    train_dataset = FilteredPlaces365.start_filter(train_dataset, SELECTED_150)
-
-    print("loaded train")
-
-    # places 365 has a val dataset
-    val_dataset = torchvision.datasets.Places365(
-        root="./data", split="val", transform=transform_train, download=True, small=True
-    )
-    # dataset is reduced in size by only using 150 of the 365 classes
-    val_dataset = FilteredPlaces365.start_filter(val_dataset, SELECTED_150)
-    print("loaded val")
-
-    test_dataset = torchvision.datasets.Places365(
-        root="./data", split="test", transform=transform_test, download=True, small=True
-    )
-    # dataset is reduced in size by only using 150 of the 365 classes
-    test_dataset = FilteredPlaces365.start_filter(test_dataset, SELECTED_150)
-    print("loaded test")
-    # """
-
-    # load cat dataset: https://github.com/Aml-Hassan-Abd-El-hamid/datasets
-
-    """
-
-    train_val_dataset = torchvision.datasets.ImageFolder(
-        root="./data/cat-dataset/train", transform=transform_train
-    )
-
-    test_dataset = torchvision.datasets.ImageFolder(
-        root="./data/cat-dataset/test", transform=transform_test
-    )
-    #"""
-
-    # Split train/val properly (80/20 split)
-    train_size = int(0.8 * len(train_val_dataset))
-    val_size = len(train_val_dataset) - train_size
-    train_dataset, val_dataset = torch.utils.data.random_split(train_val_dataset, [train_size, val_size])
-
-    # DataLoaders allow batching and shuffling
-    # Set NUM_WORKERS=0 for compatibility with freeze support (e.g., PyInstaller executables)
-
-    train_loader = DataLoader(train_dataset, batch_size=hparams.BATCH_SIZE, shuffle=True,
-                              num_workers=hparams.NUM_WORKERS)
-    val_loader = DataLoader(val_dataset, batch_size=hparams.BATCH_SIZE, shuffle=False, num_workers=hparams.NUM_WORKERS)
-    test_loader = DataLoader(test_dataset, batch_size=hparams.BATCH_SIZE, shuffle=False,
-                             num_workers=hparams.NUM_WORKERS)
-
-    return train_loader, val_loader, test_loader
 
 
 def main(hparams):

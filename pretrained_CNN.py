@@ -5,7 +5,7 @@ import torchmetrics
 from lightning import LightningModule
 from torchvision import models
 
-import model_options
+from util_files import model_options
 
 
 class EfficientNetLightning(LightningModule):
@@ -15,23 +15,30 @@ class EfficientNetLightning(LightningModule):
     """
 
     def __init__(self, learning_rate=model_options.INITIAL_LR, weight_decay=model_options.WEIGHT_DECAY,
-                 dropout_rate=model_options.DROPOUT_RATE, num_layers=model_options.NUM_LAYERS):
+                 dropout_rate=model_options.DROPOUT_RATE, unfreeze_layers=0):
         super().__init__()
 
         # Save hyperparameters (for logging and checkpointing)
         self.save_hyperparameters()
 
-        # Load EfficientNet with random weights
-        self.model = models.efficientnet_v2_l_new(num_layers=num_layers)
+        # Load pretrained EfficientNet
+        self.model = models.efficientnet_v2_l(weights=models.EfficientNet_V2_L_Weights.IMAGENET1K_V1)
 
         # Replace the classifier layer for CIFAR-100 (100 classes)
         in_features = self.model.classifier[1].in_features
         self.dropout = nn.Dropout(dropout_rate)
-        self.model.classifier[1] = nn.Linear(in_features, 100)
+        self.model.classifier[1] = nn.Linear(in_features, 365)
 
         # Freeze feature extractor layers
         for param in self.model.features.parameters():
-            param.requires_grad = True
+            param.requires_grad = False
+
+        # Unfreeze last N layers from the back:
+        if unfreeze_layers > 0:
+            layers = list(self.model.features.children())
+            for layer in layers[-unfreeze_layers:]:
+                for param in layer.parameters():
+                    param.requires_grad = True
 
         # Define loss function and metrics
         self.criterion = nn.CrossEntropyLoss()

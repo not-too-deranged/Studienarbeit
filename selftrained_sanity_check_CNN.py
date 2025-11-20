@@ -5,7 +5,7 @@ import torchmetrics
 from lightning import LightningModule
 from torchvision import models
 
-import model_options
+from util_files import model_options
 
 
 class EfficientNetLightning(LightningModule):

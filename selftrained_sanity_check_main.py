@@ -1,21 +1,18 @@
 import json
 import multiprocessing
-import random
 import time
 
 import optuna
 import torch
 import torchvision
 import torchvision.transforms as transforms
-from codecarbon import EmissionsTracker
 from lightning import Trainer
 from lightning.pytorch import loggers
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 from optuna.integration import PyTorchLightningPruningCallback
 from torch.utils.data import DataLoader
 
-import FilteredPlaces365
-import model_options
+from util_files import model_options
 from selftrained_sanity_check_CNN import EfficientNetLightning
 from compute_cost_logger import ComputeCostLogger
 

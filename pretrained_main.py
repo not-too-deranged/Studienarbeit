@@ -1,39 +1,32 @@
 import json
+import multiprocessing
 import random
 import time
 
 import optuna
-from codecarbon import EmissionsTracker
-from optuna.integration import PyTorchLightningPruningCallback
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import lightning
-import torchmetrics
-from lightning import Trainer, LightningModule
-from lightning.pytorch import loggers
-from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
-from lightning.pytorch.tuner import Tuner
-from lightning.pytorch.utilities.model_summary import ModelSummary
-from torch.utils.data import DataLoader
 import torchvision
 import torchvision.transforms as transforms
-from torchvision import models
-import multiprocessing
+from lightning import Trainer
+from lightning.pytorch import loggers
+from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
+from optuna.integration import PyTorchLightningPruningCallback
+from torch.utils.data import DataLoader
 
-import FilteredPlaces365
-from c1_selftrained_CNN import EfficientNetLightning
-import model_options
+from util_files import model_options, FilteredPlaces365
+from c1_pretrained_CNN import EfficientNetLightning
 from compute_cost_logger import ComputeCostLogger
 
 
 class Hparams:
 
     def __init__(self, batch_size = model_options.BATCH_SIZE, initial_lr = model_options.INITIAL_LR, num_epochs = model_options.NUM_EPOCHS,
-              max_epochs_lr_finder = model_options.MAX_EPOCHS_LR_FINDER, patience = model_options.PATIENCE,
-              num_workers = model_options.NUM_WORKERS, padding = model_options.PADDING, input_size = model_options.INPUT_SIZE,
-              logging_steps = model_options.LOGGING_STEPS, log_dir = model_options.LOG_DIR, dropout_rate = model_options.DROPOUT_RATE,
-              unfreeze_layers = model_options.UNFREEZE_LAYERS, weight_decay = model_options.WEIGHT_DECAY, stages = model_options.STAGES):
+                 max_epochs_lr_finder = model_options.MAX_EPOCHS_LR_FINDER, patience = model_options.PATIENCE,
+                 num_workers = model_options.NUM_WORKERS, padding = model_options.PADDING, input_size = model_options.INPUT_SIZE,
+                 logging_steps = model_options.LOGGING_STEPS, log_dir = model_options.LOG_DIR, dropout_rate = model_options.DROPOUT_RATE,
+                 unfreeze_layers = model_options.UNFREEZE_LAYERS, weight_decay = model_options.WEIGHT_DECAY,
+                 log_dir_optuna = model_options.LOG_DIR_OPTUNA, checkpoint_dir = model_options.CHECKPOINT_DIR,
+                 modelname = model_options.MODELNAME, runname = model_options.RUNNAME):
         self.BATCH_SIZE = batch_size
         self.INITIAL_LR = initial_lr
         self.NUM_EPOCHS = num_epochs
@@ -47,7 +40,10 @@ class Hparams:
         self.DROPOUT_RATE = dropout_rate
         self.UNFREEZE_LAYERS = unfreeze_layers
         self.WEIGHT_DECAY = weight_decay
-        self.STAGES = stages
+        self.LOG_DIR_OPTUNA = log_dir_optuna
+        self.CHECKPOINT_DIR = checkpoint_dir
+        self.MODELNAME = modelname
+        self.RUNNAME = runname
 
 
 def prepare_data(hparams):
@@ -78,7 +74,7 @@ def prepare_data(hparams):
 
 
     # Download the CIFAR-100 dataset
-    #"""
+    """
     train_val_dataset = torchvision.datasets.CIFAR100(
         root="./data", train=True, transform=transform_train, download=True
     )
@@ -86,14 +82,16 @@ def prepare_data(hparams):
     test_dataset = torchvision.datasets.CIFAR100(
     root="./data", train=False, transform=transform_test, download=True
     )
-    #"""
+    """
 
 
     # Download Places365 dataset for third test case
-    """
+    #"""
     ALL_CLASSES = list(range(365))
     random.seed(1234)
     SELECTED_150 = sorted(random.sample(ALL_CLASSES, 150))
+
+    print("loading data")
 
     train_dataset = torchvision.datasets.Places365(
         root="./data", split="train-standard", transform=transform_train,
@@ -135,9 +133,9 @@ def prepare_data(hparams):
     #"""
 
     # Split train/val properly (80/20 split)
-    train_size = int(0.8 * len(train_val_dataset))
-    val_size = len(train_val_dataset) - train_size
-    train_dataset, val_dataset = torch.utils.data.random_split(train_val_dataset, [train_size, val_size])
+    #train_size = int(0.8 * len(train_val_dataset))
+    #val_size = len(train_val_dataset) - train_size
+    #train_dataset, val_dataset = torch.utils.data.random_split(train_val_dataset, [train_size, val_size])
 
 
 
@@ -171,7 +169,7 @@ def main(hparams):
 
     # Save best checkpoint by validation loss
     checkpoint_callback = ModelCheckpoint(
-        dirpath="./checkpoints",
+        dirpath=f"./{hparams.CHECKPOINT_DIR}",
         filename="best_model",
         save_top_k=1,
         monitor="loss/val",
@@ -180,7 +178,7 @@ def main(hparams):
 
     # Initialize the model
     model = EfficientNetLightning(learning_rate = hparams.INITIAL_LR, weight_decay=hparams.WEIGHT_DECAY,
-                                  dropout_rate=hparams.DROPOUT_RATE, config=hparams.STAGES)
+                                  dropout_rate=hparams.DROPOUT_RATE, unfreeze_layers=hparams.UNFREEZE_LAYERS)
 
     # ============================================================
     # FULL TRAINING WITH EARLY STOPPING + CHECKPOINTING
@@ -189,7 +187,7 @@ def main(hparams):
     trainer = Trainer(
         max_epochs=hparams.NUM_EPOCHS,
         accelerator="auto",
-        callbacks=[ComputeCostLogger(), early_stop_callback, checkpoint_callback],
+        callbacks=[ComputeCostLogger(output_dir="emission_logs_c3_pretrained"), early_stop_callback, checkpoint_callback],
         logger=tb_logger,
         log_every_n_steps=hparams.LOGGING_STEPS,
     )
@@ -201,8 +199,8 @@ def main(hparams):
     # SAVE FINAL MODEL
     # ============================================================
 
-    torch.save(model.state_dict(), "./models/efficientnet_cifar100.pth")
-    print("Model saved to './models/efficientnet_cifar100.pth'")
+    torch.save(model.state_dict(), f"./models/{hparams.MODELNAME}.pth")
+    print(f"Model saved to './models/{hparams.MODELNAME}.pth'")
 
     # ============================================================
     # TEST BEST MODEL
@@ -213,45 +211,24 @@ def main(hparams):
 
 
 def objective(trial):
-    hparams = Hparams()
+    hparams = Hparams(log_dir_optuna="lightning_logs_optuna_c3_pretrained")
+
     # Hyperparameters to optimize
-    learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-1, log=True)
-    dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
-    weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-1, log=True)
-
-    config = [
-    trial.suggest_int("stage1_repeats", 1, 4),
-    trial.suggest_int("stage2_repeats", 2, 6),
-    trial.suggest_int("stage3_repeats", 2, 6),
-    trial.suggest_int("stage4_repeats", 3, 8),
-    trial.suggest_int("stage5_repeats", 4, 10),
-    trial.suggest_int("stage6_repeats", 6, 16),
-    trial.suggest_int("stage7_repeats", 8, 18)
-]
-
-
-    stages = [
-    [config[0], 32, 32, 1, 3, 1, 0.25, True],
-    [config[1], 32, 64, 4, 3, 2, 0.25, True],
-    [config[2], 64, 96, 4, 3, 2, 0.25, True],
-    [config[3], 96, 192, 4, 3, 2, 0.25, False],
-    [config[4], 192, 224, 6, 3, 1, 0.25, False],
-    [config[5], 224, 384, 6, 3, 2, 0.25, False],
-    [config[6], 384, 640, 6, 3, 1, 0.25, False]
-]
-
-
+    unfreeze_layers = trial.suggest_int("unfreeze_layers", 0, 8)
+    learning_rate = trial.suggest_float("learning_rate", 1e-6, 1e-2)
+    dropout_rate = trial.suggest_float("dropout_rate", 0.05, 0.5)
+    weight_decay = trial.suggest_float("weight_decay", 1e-5, 1e-1)
 
     model = EfficientNetLightning(
         learning_rate=learning_rate,
         dropout_rate=dropout_rate,
-        weight_decay=weight_decay,
-        config=stages
+        unfreeze_layers=unfreeze_layers,
+        weight_decay=weight_decay
     )
 
     train_loader, val_loader, _ = prepare_data(hparams)
 
-    tb_logger = loggers.TensorBoardLogger(save_dir="lightning_logs_optuna", name=f"trial_{trial.number}")
+    tb_logger = loggers.TensorBoardLogger(save_dir=f"{model_options.LOG_DIR_OPTUNA}", name=f"trial_{trial.number}")
 
     trainer = Trainer(
         max_epochs=5,  # keep short for tuning
@@ -271,15 +248,19 @@ def objective(trial):
     return val_acc.item() if val_acc is not None else 0.0
 
 def run_optuna_study(n_trials=10):
+    """
     tracker = EmissionsTracker(
         project_name="optuna_tuning",
-        output_dir="./emission_logs_c1_selftrained",
+        output_dir="./emission_logs_c3_pretrained",
         measure_power_secs=15
     )
-    #tracker.start()
+    tracker.start()
+
+    """
+
     start_time = time.time()
 
-    study = optuna.create_study(direction="maximize", study_name="efficientnet_cifar100_unfreeze")
+    study = optuna.create_study(direction="maximize", study_name="efficientnet_places_unfreeze")
     study.optimize(objective, n_trials=n_trials)
 
     print("\nBest trial:")
@@ -287,7 +268,6 @@ def run_optuna_study(n_trials=10):
     print(f"  Value (val_acc): {trial.value:.4f}")
     print(f"  Params: {trial.params}")
 
-    total_emissions = tracker.stop()
     duration = time.time() - start_time
     print("\n=== OPTUNA STUDY COST SUMMARY ===")
     print(f"Total time: {duration / 60:.2f} min")
@@ -301,30 +281,14 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    """
-    best_trial = run_optuna_study(n_trials = 20)
+    best_trial = run_optuna_study(n_trials = 40)
     best_params = best_trial.params
-
     print(f"the best parameters are: {best_params}")
     with open("best_parameters.json", "w") as f:
         json.dump(best_params, f)
 
-    stages = [
-        [best_params["stage1_repeats"], 32, 32, 1, 3, 1, 0.25, True],
-        [best_params["stage2_repeats"], 32, 64, 4, 3, 2, 0.25, True],
-        [best_params["stage3_repeats"], 64, 96, 4, 3, 2, 0.25, True],
-        [best_params["stage4_repeats"], 96, 192, 4, 3, 2, 0.25, False],
-        [best_params["stage5_repeats"], 192, 224, 6, 3, 1, 0.25, False],
-        [best_params["stage6_repeats"], 224, 384, 6, 3, 2, 0.25, False],
-        [best_params["stag7_repeats"], 384, 640, 6, 3, 1, 0.25, False]
-    ]
-    #"""
-
-    #sanity check of the sanity check
-    best_params = {'learning_rate': 0.001572222062812689, 'dropout_rate': 0.2106854604258504, 'weight_decay': 0.09620862174008252}
     hparams = Hparams(dropout_rate=best_params["dropout_rate"], initial_lr=best_params["learning_rate"],
-                      weight_decay=best_params["weight_decay"])
-
-    #hparams = Hparams(dropout_rate=best_params["dropout_rate"], initial_lr=best_params["learning_rate"],
-    #                  stages=stages, weight_decay=best_params["weight_decay"])
+                      unfreeze_layers=best_params["unfreeze_layers"], weight_decay=best_params["weight_decay"],
+                      checkpoint_dir = "c3_pretrained_checkpoints", modelname = "efficientnet_cats_pretrained",
+                      runname = "c3_pretrained")
     main(hparams)

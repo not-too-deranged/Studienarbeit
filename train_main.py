@@ -4,11 +4,13 @@ import time
 
 import optuna
 import torch
+import torchvision.models
 from lightning import Trainer
 from lightning.pytorch import loggers
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 from optuna.integration import PyTorchLightningPruningCallback
 
+import selftrained
 import pretrained_CNN
 import pretrained_main
 import selftrained_CNN

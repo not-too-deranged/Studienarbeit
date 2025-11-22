@@ -16,6 +16,10 @@ NUM_EPOCHS = 250
 NUM_EPOCHS_OPTUNA = 5
 LOGGING_STEPS = 10
 N_TRIALS_OPTUNA = 40
+#TODO change back!
+NUM_EPOCHS = 1
+NUM_EPOCHS_OPTUNA = 1
+N_TRIALS_OPTUNA = 1
 
 class Hparams:
     def __init__(self, used_dataset=USED_DATASET, dropout_rate=DROPOUT_RATE, learning_rate=LEARNING_RATE,
@@ -30,11 +34,11 @@ class Hparams:
         self.UNFREEZE_LAYERS = unfreeze_layers
         self.WEIGHT_DECAY = weight_decay
         self.STUDY_TYPE = study_type
-        self.CHECKPOINT_DIR = f"{used_dataset}_{study_type}_checkpoints_{timestamp}"
+        self.CHECKPOINT_DIR = f"./checkpoints/{used_dataset}_{study_type}_checkpoints_{timestamp}"
         self.MODELNAME = f"{used_dataset}_{study_type}_{timestamp}"
         self.RUNNAME = f"{used_dataset}_{study_type}_runname_{timestamp}"
-        self.LOG_DIR = f"lightning_logs_{used_dataset}_{study_type}_logs_{timestamp}"
-        self.LOG_DIR_OPTUNA = f"lightning_logs_optuna_{used_dataset}_{study_type}_logs_{timestamp}"
+        self.LOG_DIR = f"./lightning_logs/lightning_logs_{used_dataset}_{study_type}_logs_{timestamp}"
+        self.LOG_DIR_OPTUNA = f"./lightning_logs_optuna/lightning_logs_optuna_{used_dataset}_{study_type}_logs_{timestamp}"
         self.STUDY_NAME = f"{used_dataset}_{study_type}_study_{timestamp}"
         self.NUM_EPOCHS = num_epochs
         self.LOGGING_STEPS = logging_steps

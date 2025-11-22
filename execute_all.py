@@ -2,8 +2,11 @@ import json
 import multiprocessing
 
 import torch
+import torchvision.models
 
 import train_main
+import selftrained
+from selftrained_CNN import EfficientNetLightning
 from util_files.model_options import Hparams
 
 """
@@ -33,7 +36,7 @@ def main_loop(used_dataset, study_type):
                 best_params["stage4_repeats"],
                 best_params["stage5_repeats"],
                 best_params["stage6_repeats"],
-                best_params["stag7_repeats"]
+                best_params["stage7_repeats"]
             ]
 
             hparams = Hparams(dropout_rate=best_params["dropout_rate"], learning_rate=best_params["learning_rate"],
@@ -54,11 +57,11 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     used_datasets = ["CIFAR-100", "cats", "places365"]
-    study_types = ["pretrained", "selftrained"]
+    study_types = ["selftrained", "pretrained", "selftrained"]
     study_sanity_check = "selftrained_sanity_check" # its own category because it goes last for every dataset besides the first
 
 
-    main_loop(used_datasets[0], study_sanity_check)
+    #main_loop(used_datasets[0], study_sanity_check)
 
     for used_dataset in used_datasets:
         for study_type in study_types:

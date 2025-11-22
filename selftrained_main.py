@@ -68,7 +68,7 @@ if __name__ == '__main__':
         best_params["stage4_repeats"],
         best_params["stage5_repeats"],
         best_params["stage6_repeats"],
-        best_params["stag7_repeats"]
+        best_params["stage7_repeats"]
     ]
 
     hparams = Hparams(dropout_rate=best_params["dropout_rate"], learning_rate=best_params["learning_rate"],

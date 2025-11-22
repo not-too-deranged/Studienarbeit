@@ -6,7 +6,7 @@ LEARNING_RATE = 1e-3
 UNFREEZE_LAYERS = 0
 WEIGHT_DECAY = 1e-4
 STUDY_TYPE = "default_val"
-PATIENCE = 10  # early stopping patience
+PATIENCE = 15  # early stopping patience
 NUM_LAYERS = [4, 7, 7, 10, 19, 25, 7]
 BATCH_SIZE  = 64
 NUM_WORKERS = 4
@@ -15,11 +15,7 @@ INPUT_SIZE = 224  # EfficientNet minimum input size
 NUM_EPOCHS = 250
 NUM_EPOCHS_OPTUNA = 5
 LOGGING_STEPS = 10
-N_TRIALS_OPTUNA = 40
-#TODO change back!
-NUM_EPOCHS = 1
-NUM_EPOCHS_OPTUNA = 1
-N_TRIALS_OPTUNA = 1
+N_TRIALS_OPTUNA = 100
 
 class Hparams:
     def __init__(self, used_dataset=USED_DATASET, dropout_rate=DROPOUT_RATE, learning_rate=LEARNING_RATE,

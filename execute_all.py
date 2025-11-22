@@ -57,11 +57,11 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     used_datasets = ["CIFAR-100", "cats", "places365"]
-    study_types = ["selftrained", "pretrained", "selftrained"]
+    study_types = ["pretrained", "selftrained"]
     study_sanity_check = "selftrained_sanity_check" # its own category because it goes last for every dataset besides the first
 
 
-    #main_loop(used_datasets[0], study_sanity_check)
+    main_loop(used_datasets[0], study_sanity_check)
 
     for used_dataset in used_datasets:
         for study_type in study_types:

@@ -151,6 +151,14 @@ def optuna_train_objective(hparams, trial, model):
     return val_acc.item() if val_acc is not None else 0.0
 
 
+def callback_time_over(study, trial):
+    start_time = study.user_attrs["start_time"]
+    max_time = study.user_attrs["max_time"]
+
+    if time.time() - start_time > max_time:
+        study.stop()
+
+
 def run_optuna_study(hparams):
     match hparams.STUDY_TYPE:
         case "pretrained":
@@ -168,7 +176,11 @@ def run_optuna_study(hparams):
     func = lambda trial: objective(trial, hparams)
 
     study = optuna.create_study(direction="maximize", study_name=hparams.STUDY_NAME)
-    study.optimize(func, n_trials=hparams.N_TRIALS_OPTUNA)
+
+    study.set_user_attr("start_time", start_time)
+    study.set_user_attr("max_time", hparams.OPTUNA_MAX_TIME)
+
+    study.optimize(func, n_trials=hparams.N_TRIALS_OPTUNA, callbacks=[callback_time_over])
 
     print("\nBest trial:")
     trial = study.best_trial

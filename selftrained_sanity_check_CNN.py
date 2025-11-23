@@ -26,7 +26,14 @@ class EfficientNetLightning(LightningModule):
         # Replace the classifier layer for CIFAR-100 (100 classes)
         in_features = self.model.classifier[1].in_features
         self.dropout = nn.Dropout(dropout_rate)
-        self.model.classifier[1] = nn.Linear(in_features, num_classes)
+        # use dropout
+        self.model.classifier = nn.Sequential(
+            nn.Dropout(dropout_rate),
+            nn.Linear(in_features, num_classes)
+        )
+        # weight initialization
+        nn.init.xavier_uniform_(self.model.classifier[1].weight)
+        nn.init.zeros_(self.model.classifier[1].bias)
 
         # Freeze feature extractor layers
         for param in self.model.features.parameters():

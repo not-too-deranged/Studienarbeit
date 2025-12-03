@@ -1,0 +1,4 @@
+dropout_rate: 0.11642437100831833
+learning_rate: 0.043148496477809335
+unfreeze_layers: 1
+weight_decay: 0.0001

@@ -1,0 +1,4 @@
+dropout_rate: 0.07734052225894769
+learning_rate: 0.0001559573128889318
+num_classes: 150
+weight_decay: 0.014221577125762146

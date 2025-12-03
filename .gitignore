@@ -1,0 +1,17 @@
+bin
+include
+.venv/lib
+.venv/bin
+runs/cifar10_pretrained/
+/checkpoints/
+/data/
+/models/
+tensorboard_logs
+lightning_logs_optuna
+/emission_logs/
+/.idea/
+__pycache__/
+/best_parameters/
+/old_logs/
+/runs/
+/.venv1/

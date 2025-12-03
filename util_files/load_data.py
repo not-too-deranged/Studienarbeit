@@ -27,7 +27,7 @@ def prepare_data(hparams):
     ])
 
     transform_test = transforms.Compose([
-        transforms.Resize(hparams.INPUT_SIZE),
+        transforms.Resize((hparams.INPUT_SIZE, hparams.INPUT_SIZE)),
         transforms.ToTensor(),
         transforms.Normalize(
             mean=[0.485, 0.456, 0.406],
@@ -68,34 +68,21 @@ def prepare_data(hparams):
             SELECTED_150 = sorted(random.sample(ALL_CLASSES, 150))
 
             print("loading data")
-
-            train_dataset = torchvision.datasets.Places365(
+            # train dataset is used for train, val and split set, because original val is too small and test ist unlabelled
+            train_val_test_dataset = torchvision.datasets.Places365(
                 root="./data", split="train-standard", transform=transform_train,
                 download=True, small=True
             )
             # dataset is reduced in size by only using 150 of the 365 classes
-            train_dataset = FilteredPlaces365.start_filter(train_dataset, SELECTED_150)
+            train_val_test_dataset = FilteredPlaces365.start_filter(train_val_test_dataset, SELECTED_150)
 
-            print("loaded train")
+            print("loaded dataset")
 
-            # places 365 has a val dataset
-            val_dataset = torchvision.datasets.Places365(
-                root="./data", split="val", transform=transform_train, download=True, small=True
-            )
-            # dataset is reduced in size by only using 150 of the 365 classes
-            val_dataset = FilteredPlaces365.start_filter(val_dataset, SELECTED_150)
-            print("loaded val")
-
-            test_dataset = torchvision.datasets.Places365(
-                root="./data", split="test", transform=transform_test, download=True, small=True
-            )
-            # dataset is reduced in size by only using 150 of the 365 classes
-            test_dataset = FilteredPlaces365.start_filter(test_dataset, SELECTED_150)
-            print("loaded test")
+            train_dataset, val_test_dataset = split_data(train_val_test_dataset, split=0.6)
+            val_dataset, test_dataset = split_data(val_test_dataset, split=0.5)
 
         case _:
             raise ValueError(f"Unknown dataset: {hparams.USED_DATASET}")
-
 
     # DataLoaders allow batching and shuffling
     # Set NUM_WORKERS=0 for compatibility with freeze support (e.g., PyInstaller executables)

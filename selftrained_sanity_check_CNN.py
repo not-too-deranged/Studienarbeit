@@ -105,7 +105,7 @@ class EfficientNetLightning(LightningModule):
 
         #lower learning rate for backbone
         optimizer = optim.AdamW([
-            {"params": backbone_params, "lr": self.hparams.learning_rate * 0.1},
+            {"params": backbone_params, "lr": self.hparams.learning_rate},
             {"params": classifier_params, "lr": self.hparams.learning_rate}
         ], weight_decay=self.hparams.weight_decay)
 

@@ -61,11 +61,12 @@ if __name__ == '__main__':
     study_sanity_check = "selftrained_sanity_check" # its own category because it goes last for every dataset besides the first
 
 
+    main_loop(used_datasets[1], study_types[0])
     main_loop(used_datasets[0], study_sanity_check)
 
     for used_dataset in used_datasets:
         for study_type in study_types:
             main_loop(used_dataset, study_type)
 
-    for used_dataset in used_datasets[1:]:
+    for used_dataset in used_datasets:
         main_loop(used_dataset, study_sanity_check)

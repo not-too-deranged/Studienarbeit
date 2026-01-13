@@ -14,14 +14,14 @@ class EfficientNetLightning(LightningModule):
     Handles training, validation, and optimization automatically.
     """
 
-    def __init__(self, learning_rate, weight_decay, dropout_rate, num_classes):
+    def __init__(self, learning_rate, weight_decay, dropout_rate, num_layers, num_classes):
         super().__init__()
 
         # Save hyperparameters (for logging and checkpointing)
         self.save_hyperparameters()
 
         # Load EfficientNet with random weights
-        self.model = models.efficientnet_v2_l(weights=None)
+        self.model = models.efficientnet_v2_l_new(num_layers=num_layers)
 
         # Replace the classifier layer for CIFAR-100 (100 classes)
         in_features = self.model.classifier[1].in_features

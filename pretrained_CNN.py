@@ -14,30 +14,37 @@ class EfficientNetLightning(LightningModule):
     Handles training, validation, and optimization automatically.
     """
 
-    def __init__(self, learning_rate, weight_decay, dropout_rate, num_classes):
+    def __init__(self, learning_rate, weight_decay, dropout_rate, unfreeze_layers, num_classes):
         super().__init__()
 
         # Save hyperparameters (for logging and checkpointing)
         self.save_hyperparameters()
 
-        # Load EfficientNet with random weights
-        self.model = models.efficientnet_v2_l(weights=None)
+        # Load pretrained EfficientNet
+        self.model = models.efficientnet_v2_l(weights=models.EfficientNet_V2_L_Weights.IMAGENET1K_V1)
 
         # Replace the classifier layer for CIFAR-100 (100 classes)
         in_features = self.model.classifier[1].in_features
         self.dropout = nn.Dropout(dropout_rate)
-        # use dropout
+        #use dropout
         self.model.classifier = nn.Sequential(
             nn.Dropout(dropout_rate),
             nn.Linear(in_features, num_classes)
         )
-        # weight initialization
+        #weight initialization
         nn.init.xavier_uniform_(self.model.classifier[1].weight)
         nn.init.zeros_(self.model.classifier[1].bias)
 
         # Freeze feature extractor layers
         for param in self.model.features.parameters():
-            param.requires_grad = True
+            param.requires_grad = False
+
+        # Unfreeze last N layers from the back:
+        if unfreeze_layers > 0:
+            layers = list(self.model.features.children())
+            for layer in layers[-unfreeze_layers:]:
+                for param in layer.parameters():
+                    param.requires_grad = True
 
         # Define loss function and metrics
         self.criterion = nn.CrossEntropyLoss()
@@ -105,7 +112,7 @@ class EfficientNetLightning(LightningModule):
 
         #lower learning rate for backbone
         optimizer = optim.AdamW([
-            {"params": backbone_params, "lr": self.hparams.learning_rate},
+            {"params": backbone_params, "lr": self.hparams.learning_rate * 0.1},
             {"params": classifier_params, "lr": self.hparams.learning_rate}
         ], weight_decay=self.hparams.weight_decay)
 

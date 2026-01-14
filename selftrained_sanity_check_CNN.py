@@ -57,8 +57,8 @@ class EfficientNetLightning(LightningModule):
         preds = torch.argmax(outputs, dim=1)
         acc = self.train_acc(preds, labels)
 
-        self.log('loss/train', loss, prog_bar=True)
-        self.log('acc/train', acc, prog_bar=True)
+        self.log('loss/train', loss, prog_bar=True, on_epoch=True, on_step=True)
+        self.log('acc/train', acc, prog_bar=True, on_epoch=True, on_step=True)
 
         return loss
 
@@ -70,8 +70,8 @@ class EfficientNetLightning(LightningModule):
         preds = torch.argmax(outputs, dim=1)
         acc = self.val_acc(preds, labels)
 
-        self.log('loss/val', loss, prog_bar=True)
-        self.log('acc/val', acc, prog_bar=True)
+        self.log('loss/val', loss, prog_bar=True, on_epoch=True, on_step=True)
+        self.log('acc/val', acc, prog_bar=True, on_epoch=True, on_step=True)
 
         return loss
 
@@ -83,8 +83,8 @@ class EfficientNetLightning(LightningModule):
         preds = torch.argmax(outputs, dim=1)
         acc = self.test_acc(preds, labels)
 
-        self.log('loss/test', loss, prog_bar=True)
-        self.log('acc/test', acc, prog_bar=True)
+        self.log('loss/test', loss, prog_bar=True, on_epoch=True, on_step=True)
+        self.log('acc/test', acc, prog_bar=True, on_epoch=True, on_step=True)
 
         return loss
 

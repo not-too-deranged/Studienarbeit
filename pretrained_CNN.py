@@ -1,3 +1,5 @@
+from pytorch_lightning.callbacks import Callback
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -6,6 +8,23 @@ from lightning import LightningModule
 from torchvision import models
 
 from util_files import model_options
+
+
+class OverrideEpochStepCallback(Callback):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        self._log_step_as_current_epoch(trainer, pl_module)
+
+    def on_test_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        self._log_step_as_current_epoch(trainer, pl_module)
+
+    def on_validation_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        self._log_step_as_current_epoch(trainer, pl_module)
+
+    def _log_step_as_current_epoch(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        pl_module.log("step", trainer.current_epoch)
 
 
 class EfficientNetLightning(LightningModule):
@@ -64,19 +83,10 @@ class EfficientNetLightning(LightningModule):
         preds = torch.argmax(outputs, dim=1)
         acc = self.train_acc(preds, labels)
 
-        self.log('loss/train', loss, prog_bar=True, on_epoch=True)
-        self.log('acc/train', acc, prog_bar=True, on_epoch=True)
+        self.log('loss/train', loss, prog_bar=True, on_epoch=True, on_step=True)
+        self.log('acc/train', acc, prog_bar=True, on_epoch=True, on_step=True)
 
         return loss
-
-    """
-        def on_train_epoch_end(self, outputs):
-        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
-        self.log('loss/train/epoch', avg_loss)
-        avg_acc = torch.stack([x['acc'] for x in outputs]).mean()
-        self.log('acc/train/epoch', avg_acc)
-    """
-
 
     def validation_step(self, batch, batch_idx):
         """Defines a single validation iteration."""
@@ -86,8 +96,8 @@ class EfficientNetLightning(LightningModule):
         preds = torch.argmax(outputs, dim=1)
         acc = self.val_acc(preds, labels)
 
-        self.log('loss/val', loss, prog_bar=True, on_epoch=True)
-        self.log('acc/val', acc, prog_bar=True, on_epoch=True)
+        self.log('loss/val', loss, prog_bar=True, on_epoch=True, on_step=True)
+        self.log('acc/val', acc, prog_bar=True, on_epoch=True, on_step=True)
 
         return loss
 
@@ -99,8 +109,8 @@ class EfficientNetLightning(LightningModule):
         preds = torch.argmax(outputs, dim=1)
         acc = self.test_acc(preds, labels)
 
-        self.log('loss/test', loss, prog_bar=True, on_epoch=True)
-        self.log('acc/test', acc, prog_bar=True, on_epoch=True)
+        self.log('loss/test', loss, prog_bar=True, on_epoch=True, on_step=True)
+        self.log('acc/test', acc, prog_bar=True, on_epoch=True, on_step=True)
 
         return loss
 

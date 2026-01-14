@@ -15,11 +15,12 @@ File containing the main loop_which starts all trainings
 
 
 def main_loop(used_dataset, study_type):
+
     hparams = Hparams(used_dataset=used_dataset, study_type=study_type)
 
-    #best_trial = train_main.run_optuna_study(hparams=hparams)
-    #best_params = best_trial.params
-    best_params = {'unfreeze_layers': 2, 'learning_rate': 0.00326, 'dropout_rate': 0.0033, 'weight_decay': 0.076}
+    best_trial = train_main.run_optuna_study(hparams=hparams)
+    best_params = best_trial.params
+
     print(f"the best parameters are: {best_params}")
     with open(f"./best_parameters/best_parameters_{hparams.MODELNAME}.json", "w") as f:
         json.dump(best_params, f)
@@ -63,11 +64,12 @@ if __name__ == '__main__':
 
 
     main_loop(used_datasets[1], study_types[0])
-    System.exit(0)
 
     for used_dataset in used_datasets:
         for study_type in study_types:
-            main_loop(used_dataset, study_type)
+            for i in range(10):
+                main_loop(used_dataset, study_type)
 
     for used_dataset in used_datasets:
-        main_loop(used_dataset, study_sanity_check)
+        for i in range(10):
+            main_loop(used_dataset, study_sanity_check)

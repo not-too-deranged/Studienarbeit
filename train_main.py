@@ -129,7 +129,6 @@ def main(hparams):
         tensor_name="Confusion_Matrix",
         normalize=False
     )
-    cm_summary.savefig("confusion_matrix.png")
 
     tb_logger.experiment.add_figure(
        tag="Confusion_Matrix",

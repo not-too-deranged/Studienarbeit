@@ -17,6 +17,7 @@ import selftrained_CNN
 import selftrained_main
 import selftrained_sanity_check_CNN
 import selftrained_sanity_check_main
+from confusion_matrix import plot_confusion_matrix
 from util_files.load_data import prepare_data
 
 """
@@ -34,6 +35,7 @@ def main(hparams):
     # Lightning handles TensorBoard automatically; no manual SummaryWriter needed
     run_name = hparams.RUNNAME
     tb_logger = loggers.TensorBoardLogger(save_dir=f"{hparams.LOG_DIR}", name=run_name)
+    #tb_logger.log_hyperparams(step=hparams.NUM_EPOCHS)
 
     # Early stopping monitors validation loss
     early_stop_callback = EarlyStopping(
@@ -52,17 +54,22 @@ def main(hparams):
     # Initialize the model
     match hparams.STUDY_TYPE:
         case "pretrained":
-            model = pretrained_CNN.EfficientNetLightning(learning_rate = hparams.LEARNING_RATE,
-                                          weight_decay=hparams.WEIGHT_DECAY,
-                                          dropout_rate=hparams.DROPOUT_RATE, unfreeze_layers=hparams.UNFREEZE_LAYERS,
-                                          num_classes=hparams.NUM_CLASSES)
+            model = pretrained_CNN.EfficientNetLightning(learning_rate=hparams.LEARNING_RATE,
+                                                         weight_decay=hparams.WEIGHT_DECAY,
+                                                         dropout_rate=hparams.DROPOUT_RATE,
+                                                         unfreeze_layers=hparams.UNFREEZE_LAYERS,
+                                                         num_classes=hparams.NUM_CLASSES)
         case "selftrained":
-            model = selftrained_CNN.EfficientNetLightning(learning_rate=hparams.LEARNING_RATE, weight_decay=hparams.WEIGHT_DECAY,
-                                          dropout_rate=hparams.DROPOUT_RATE, num_layers=hparams.NUM_LAYERS,
-                                          num_classes=hparams.NUM_CLASSES)
+            model = selftrained_CNN.EfficientNetLightning(learning_rate=hparams.LEARNING_RATE,
+                                                          weight_decay=hparams.WEIGHT_DECAY,
+                                                          dropout_rate=hparams.DROPOUT_RATE,
+                                                          num_layers=hparams.NUM_LAYERS,
+                                                          num_classes=hparams.NUM_CLASSES)
         case "selftrained_sanity_check":
-            model = selftrained_sanity_check_CNN.EfficientNetLightning(learning_rate=hparams.LEARNING_RATE, weight_decay=hparams.WEIGHT_DECAY,
-                                          dropout_rate=hparams.DROPOUT_RATE, num_classes=hparams.NUM_CLASSES)
+            model = selftrained_sanity_check_CNN.EfficientNetLightning(learning_rate=hparams.LEARNING_RATE,
+                                                                       weight_decay=hparams.WEIGHT_DECAY,
+                                                                       dropout_rate=hparams.DROPOUT_RATE,
+                                                                       num_classes=hparams.NUM_CLASSES)
         case _:
             raise ValueError(f"Unknown study type: {hparams.STUDY_TYPE}")
 
@@ -94,6 +101,41 @@ def main(hparams):
 
     print("\nTesting best saved model on test data...")
     test_results = trainer.test(model, dataloaders=test_loader)
+
+    # Collect predictions and labels for confusion matrix
+    model.eval()
+    correct_labels = []
+    predict_labels = []
+
+    with torch.no_grad():
+        for images, labels in test_loader:
+            images = images.to(model.device)
+            outputs = model(images)
+            preds = torch.argmax(outputs, dim=1)
+
+            correct_labels.extend(labels.cpu().numpy().tolist())
+            predict_labels.extend(preds.cpu().numpy().tolist())
+
+    # Convert to strings for the confusion matrix function
+    correct_labels = [str(x) for x in correct_labels]
+    predict_labels = [str(x) for x in predict_labels]
+
+    # Plot confusion matrix
+    cm_summary = plot_confusion_matrix(
+        correct_labels=correct_labels,
+        predict_labels=predict_labels,
+        labels=[str(i) for i in range(hparams.NUM_CLASSES)],
+        title="Confusion Matrix",
+        tensor_name="Confusion_Matrix",
+        normalize=False
+    )
+    cm_summary.savefig("confusion_matrix.png")
+
+    tb_logger.experiment.add_figure(
+       tag="Confusion_Matrix",
+       figure= cm_summary,
+       global_step=0
+    )
 
     # Convert to a single dict (if there's only one test loader)
     if isinstance(test_results, list) and len(test_results) == 1:

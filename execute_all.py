@@ -1,8 +1,11 @@
 import json
 import multiprocessing
+import os
+import sys
 
 import torch
 import torchvision.models
+from tensorboard.backend.event_processing import event_accumulator
 
 import train_main
 import selftrained
@@ -62,14 +65,14 @@ if __name__ == '__main__':
     study_types = ["pretrained", "selftrained"]
     study_sanity_check = "selftrained_sanity_check" # its own category because it goes last for every dataset besides the first
 
-
-    main_loop(used_datasets[1], study_types[0])
-
     for used_dataset in used_datasets:
         for study_type in study_types:
-            for i in range(10):
+            for i in range(4):
                 main_loop(used_dataset, study_type)
 
+
     for used_dataset in used_datasets:
-        for i in range(10):
+        for i in range(4):
             main_loop(used_dataset, study_sanity_check)
+
+#TODO get old params in here and let the mrun without optuna

@@ -6,7 +6,7 @@ LEARNING_RATE = 1e-3
 UNFREEZE_LAYERS = 0
 WEIGHT_DECAY = 1e-4
 STUDY_TYPE = "default_val"
-PATIENCE = 15  # early stopping patience
+PATIENCE = 6  # early stopping patience
 NUM_LAYERS = [4, 7, 7, 10, 19, 25, 7]
 BATCH_SIZE  = 64
 NUM_WORKERS = 4
@@ -15,7 +15,7 @@ INPUT_SIZE = 224  # EfficientNet minimum input size
 NUM_EPOCHS = 250
 NUM_EPOCHS_OPTUNA = 5
 LOGGING_STEPS = 10
-N_TRIALS_OPTUNA = 100
+N_TRIALS_OPTUNA = 50
 OPTUNA_MAX_TIME = 43200 #12 hours
 
 class Hparams:

@@ -17,7 +17,6 @@ import selftrained_CNN
 import selftrained_main
 import selftrained_sanity_check_CNN
 import selftrained_sanity_check_main
-from confusion_matrix import plot_confusion_matrix
 from util_files.load_data import prepare_data
 
 """
@@ -102,6 +101,7 @@ def main(hparams):
     print("\nTesting best saved model on test data...")
     test_results = trainer.test(model, dataloaders=test_loader)
 
+    """
     # Collect predictions and labels for confusion matrix
     model.eval()
     correct_labels = []
@@ -135,6 +135,7 @@ def main(hparams):
        figure= cm_summary,
        global_step=0
     )
+    """
 
     # Convert to a single dict (if there's only one test loader)
     if isinstance(test_results, list) and len(test_results) == 1:

@@ -1,0 +1,5 @@
+dropout_rate: 0.37826348648532626
+learning_rate: 0.00660992962671746
+num_classes: 150
+unfreeze_layers: 5
+weight_decay: 0.009092279018782267

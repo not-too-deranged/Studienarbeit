@@ -654,5 +654,210 @@
             "loss/test_epoch": 1.281943917274475,
             "acc/test_epoch": 0.6449013352394104
         }
+    },
+    {
+        "model_name": "CIFAR-100_pretrained_2026-01-22_19:22:56",
+        "hyperparameters": {
+            "BATCH_SIZE": 64,
+            "CHECKPOINT_DIR": "./checkpoints/CIFAR-100_pretrained_checkpoints_2026-01-22_19:22:56",
+            "DROPOUT_RATE": 0.25293962959936245,
+            "INPUT_SIZE": 224,
+            "LEARNING_RATE": 0.00047343322911461594,
+            "LOGGING_STEPS": 10,
+            "LOG_DIR": "./lightning_logs_per_epoch/lightning_logs_CIFAR-100_pretrained_logs_2026-01-22_19:22:56",
+            "LOG_DIR_OPTUNA": "./lightning_logs_optuna/lightning_logs_optuna_CIFAR-100_pretrained_logs_2026-01-22_19:22:56",
+            "MODELNAME": "CIFAR-100_pretrained_2026-01-22_19:22:56",
+            "NUM_CLASSES": 100,
+            "NUM_EPOCHS": 250,
+            "NUM_EPOCHS_OPTUNA": 5,
+            "NUM_LAYERS": [
+                4,
+                7,
+                7,
+                10,
+                19,
+                25,
+                7
+            ],
+            "NUM_WORKERS": 4,
+            "N_TRIALS_OPTUNA": 50,
+            "OPTUNA_MAX_TIME": 43200,
+            "PADDING": 4,
+            "PATIENCE": 6,
+            "RUNNAME": "CIFAR-100_pretrained_runname_2026-01-22_19:22:56",
+            "STUDY_NAME": "CIFAR-100_pretrained_study_2026-01-22_19:22:56",
+            "STUDY_TYPE": "pretrained",
+            "UNFREEZE_LAYERS": 7,
+            "USED_DATASET": "CIFAR-100",
+            "WEIGHT_DECAY": 0.012090612181445519
+        },
+        "test_results": {
+            "loss/test_epoch": 0.47433939576148987,
+            "acc/test_epoch": 0.8949999809265137
+        }
+    },
+    {
+        "model_name": "CIFAR-100_selftrained_2026-01-22_19:22:56",
+        "hyperparameters": {
+            "BATCH_SIZE": 64,
+            "CHECKPOINT_DIR": "./checkpoints/CIFAR-100_selftrained_checkpoints_2026-01-22_19:22:56",
+            "DROPOUT_RATE": 0.2444023299558234,
+            "INPUT_SIZE": 224,
+            "LEARNING_RATE": 0.00023314829729670906,
+            "LOGGING_STEPS": 10,
+            "LOG_DIR": "./lightning_logs_per_epoch/lightning_logs_CIFAR-100_selftrained_logs_2026-01-22_19:22:56",
+            "LOG_DIR_OPTUNA": "./lightning_logs_optuna/lightning_logs_optuna_CIFAR-100_selftrained_logs_2026-01-22_19:22:56",
+            "MODELNAME": "CIFAR-100_selftrained_2026-01-22_19:22:56",
+            "NUM_CLASSES": 100,
+            "NUM_EPOCHS": 250,
+            "NUM_EPOCHS_OPTUNA": 5,
+            "NUM_LAYERS": [
+                2,
+                6,
+                6,
+                3,
+                5,
+                6,
+                8
+            ],
+            "NUM_WORKERS": 4,
+            "N_TRIALS_OPTUNA": 50,
+            "OPTUNA_MAX_TIME": 43200,
+            "PADDING": 4,
+            "PATIENCE": 6,
+            "RUNNAME": "CIFAR-100_selftrained_runname_2026-01-22_19:22:56",
+            "STUDY_NAME": "CIFAR-100_selftrained_study_2026-01-22_19:22:56",
+            "STUDY_TYPE": "selftrained",
+            "UNFREEZE_LAYERS": 0,
+            "USED_DATASET": "CIFAR-100",
+            "WEIGHT_DECAY": 0.04319330248936678
+        },
+        "test_results": {
+            "loss/test_epoch": 1.4187554121017456,
+            "acc/test_epoch": 0.660099983215332
+        }
+    },
+    {
+        "model_name": "cats_pretrained_2026-01-22_19:22:56",
+        "hyperparameters": {
+            "BATCH_SIZE": 64,
+            "CHECKPOINT_DIR": "./checkpoints/cats_pretrained_checkpoints_2026-01-22_19:22:56",
+            "DROPOUT_RATE": 0.05876427836486195,
+            "INPUT_SIZE": 224,
+            "LEARNING_RATE": 0.001353291868908322,
+            "LOGGING_STEPS": 10,
+            "LOG_DIR": "./lightning_logs_per_epoch/lightning_logs_cats_pretrained_logs_2026-01-22_19:22:56",
+            "LOG_DIR_OPTUNA": "./lightning_logs_optuna/lightning_logs_optuna_cats_pretrained_logs_2026-01-22_19:22:56",
+            "MODELNAME": "cats_pretrained_2026-01-22_19:22:56",
+            "NUM_CLASSES": 35,
+            "NUM_EPOCHS": 250,
+            "NUM_EPOCHS_OPTUNA": 5,
+            "NUM_LAYERS": [
+                4,
+                7,
+                7,
+                10,
+                19,
+                25,
+                7
+            ],
+            "NUM_WORKERS": 4,
+            "N_TRIALS_OPTUNA": 50,
+            "OPTUNA_MAX_TIME": 43200,
+            "PADDING": 4,
+            "PATIENCE": 6,
+            "RUNNAME": "cats_pretrained_runname_2026-01-22_19:22:56",
+            "STUDY_NAME": "cats_pretrained_study_2026-01-22_19:22:56",
+            "STUDY_TYPE": "pretrained",
+            "UNFREEZE_LAYERS": 7,
+            "USED_DATASET": "cats",
+            "WEIGHT_DECAY": 0.07161379003827505
+        },
+        "test_results": {
+            "loss/test_epoch": 1.7442026138305664,
+            "acc/test_epoch": 0.6498070955276489
+        }
+    },
+    {
+        "model_name": "cats_selftrained_2026-01-22_19:22:56",
+        "hyperparameters": {
+            "BATCH_SIZE": 64,
+            "CHECKPOINT_DIR": "./checkpoints/cats_selftrained_checkpoints_2026-01-22_19:22:56",
+            "DROPOUT_RATE": 0.45283985350289024,
+            "INPUT_SIZE": 224,
+            "LEARNING_RATE": 0.0003653202465621788,
+            "LOGGING_STEPS": 10,
+            "LOG_DIR": "./lightning_logs_per_epoch/lightning_logs_cats_selftrained_logs_2026-01-22_19:22:56",
+            "LOG_DIR_OPTUNA": "./lightning_logs_optuna/lightning_logs_optuna_cats_selftrained_logs_2026-01-22_19:22:56",
+            "MODELNAME": "cats_selftrained_2026-01-22_19:22:56",
+            "NUM_CLASSES": 35,
+            "NUM_EPOCHS": 250,
+            "NUM_EPOCHS_OPTUNA": 5,
+            "NUM_LAYERS": [
+                2,
+                4,
+                2,
+                3,
+                5,
+                7,
+                8
+            ],
+            "NUM_WORKERS": 4,
+            "N_TRIALS_OPTUNA": 50,
+            "OPTUNA_MAX_TIME": 43200,
+            "PADDING": 4,
+            "PATIENCE": 6,
+            "RUNNAME": "cats_selftrained_runname_2026-01-22_19:22:56",
+            "STUDY_NAME": "cats_selftrained_study_2026-01-22_19:22:56",
+            "STUDY_TYPE": "selftrained",
+            "UNFREEZE_LAYERS": 0,
+            "USED_DATASET": "cats",
+            "WEIGHT_DECAY": 0.07089314901738165
+        },
+        "test_results": {
+            "loss/test_epoch": 2.353665351867676,
+            "acc/test_epoch": 0.3694813549518585
+        }
+    },
+    {
+        "model_name": "places365_pretrained_2026-01-22_19:22:56",
+        "hyperparameters": {
+            "BATCH_SIZE": 64,
+            "CHECKPOINT_DIR": "./checkpoints/places365_pretrained_checkpoints_2026-01-22_19:22:56",
+            "DROPOUT_RATE": 0.32369922972580567,
+            "INPUT_SIZE": 224,
+            "LEARNING_RATE": 0.0020832848377157595,
+            "LOGGING_STEPS": 10,
+            "LOG_DIR": "./lightning_logs_per_epoch/lightning_logs_places365_pretrained_logs_2026-01-22_19:22:56",
+            "LOG_DIR_OPTUNA": "./lightning_logs_optuna/lightning_logs_optuna_places365_pretrained_logs_2026-01-22_19:22:56",
+            "MODELNAME": "places365_pretrained_2026-01-22_19:22:56",
+            "NUM_CLASSES": 150,
+            "NUM_EPOCHS": 250,
+            "NUM_EPOCHS_OPTUNA": 5,
+            "NUM_LAYERS": [
+                4,
+                7,
+                7,
+                10,
+                19,
+                25,
+                7
+            ],
+            "NUM_WORKERS": 4,
+            "N_TRIALS_OPTUNA": 50,
+            "OPTUNA_MAX_TIME": 43200,
+            "PADDING": 4,
+            "PATIENCE": 6,
+            "RUNNAME": "places365_pretrained_runname_2026-01-22_19:22:56",
+            "STUDY_NAME": "places365_pretrained_study_2026-01-22_19:22:56",
+            "STUDY_TYPE": "pretrained",
+            "UNFREEZE_LAYERS": 5,
+            "USED_DATASET": "places365",
+            "WEIGHT_DECAY": 0.026607611379867172
+        },
+        "test_results": {
+            "loss/test_epoch": 1.3571618795394897,
+            "acc/test_epoch": 0.6564079523086548
+        }
     }
 ]

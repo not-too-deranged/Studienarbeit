@@ -1023,5 +1023,46 @@
             "loss/test_epoch": 1.3745037317276,
             "acc/test_epoch": 0.6395378708839417
         }
+    },
+    {
+        "model_name": "places365_pretrained_2026-01-24_12:38:01",
+        "hyperparameters": {
+            "BATCH_SIZE": 64,
+            "CHECKPOINT_DIR": "./checkpoints/places365_pretrained_checkpoints_2026-01-24_12:38:01",
+            "DROPOUT_RATE": 0.39534975894705066,
+            "INPUT_SIZE": 224,
+            "LEARNING_RATE": 0.002706471556739768,
+            "LOGGING_STEPS": 10,
+            "LOG_DIR": "./lightning_logs_per_epoch/lightning_logs_places365_pretrained_logs_2026-01-24_12:38:01",
+            "LOG_DIR_OPTUNA": "./lightning_logs_optuna/lightning_logs_optuna_places365_pretrained_logs_2026-01-24_12:38:01",
+            "MODELNAME": "places365_pretrained_2026-01-24_12:38:01",
+            "NUM_CLASSES": 150,
+            "NUM_EPOCHS": 250,
+            "NUM_EPOCHS_OPTUNA": 5,
+            "NUM_LAYERS": [
+                4,
+                7,
+                7,
+                10,
+                19,
+                25,
+                7
+            ],
+            "NUM_WORKERS": 4,
+            "N_TRIALS_OPTUNA": 50,
+            "OPTUNA_MAX_TIME": 43200,
+            "PADDING": 4,
+            "PATIENCE": 6,
+            "RUNNAME": "places365_pretrained_runname_2026-01-24_12:38:01",
+            "STUDY_NAME": "places365_pretrained_study_2026-01-24_12:38:01",
+            "STUDY_TYPE": "pretrained",
+            "UNFREEZE_LAYERS": 3,
+            "USED_DATASET": "places365",
+            "WEIGHT_DECAY": 0.06666958431442882
+        },
+        "test_results": {
+            "loss/test_epoch": 1.2754472494125366,
+            "acc/test_epoch": 0.6489676237106323
+        }
     }
 ]

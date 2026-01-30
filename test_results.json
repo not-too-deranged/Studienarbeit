@@ -1146,5 +1146,87 @@
             "loss/test_epoch": 1.5556018352508545,
             "acc/test_epoch": 0.5956352949142456
         }
+    },
+    {
+        "model_name": "places365_selftrained_2026-01-29_09:15:53",
+        "hyperparameters": {
+            "BATCH_SIZE": 64,
+            "CHECKPOINT_DIR": "./checkpoints/places365_selftrained_checkpoints_2026-01-29_09:15:53",
+            "DROPOUT_RATE": 0.35187,
+            "INPUT_SIZE": 224,
+            "LEARNING_RATE": 0.0054077,
+            "LOGGING_STEPS": 10,
+            "LOG_DIR": "./lightning_logs_per_epoch/lightning_logs_places365_selftrained_logs_2026-01-29_09:15:53",
+            "LOG_DIR_OPTUNA": "./lightning_logs_optuna/lightning_logs_optuna_places365_selftrained_logs_2026-01-29_09:15:53",
+            "MODELNAME": "places365_selftrained_2026-01-29_09:15:53",
+            "NUM_CLASSES": 150,
+            "NUM_EPOCHS": 250,
+            "NUM_EPOCHS_OPTUNA": 5,
+            "NUM_LAYERS": [
+                4,
+                4,
+                2,
+                3,
+                10,
+                7,
+                17
+            ],
+            "NUM_WORKERS": 4,
+            "N_TRIALS_OPTUNA": 50,
+            "OPTUNA_MAX_TIME": 43200,
+            "PADDING": 4,
+            "PATIENCE": 6,
+            "RUNNAME": "places365_selftrained_runname_2026-01-29_09:15:53",
+            "STUDY_NAME": "places365_selftrained_study_2026-01-29_09:15:53",
+            "STUDY_TYPE": "selftrained",
+            "UNFREEZE_LAYERS": 0,
+            "USED_DATASET": "places365",
+            "WEIGHT_DECAY": 0.0069439
+        },
+        "test_results": {
+            "loss/test_epoch": 1.8084793090820312,
+            "acc/test_epoch": 0.520916223526001
+        }
+    },
+    {
+        "model_name": "places365_selftrained_2026-01-29_09:15:53",
+        "hyperparameters": {
+            "BATCH_SIZE": 64,
+            "CHECKPOINT_DIR": "./checkpoints/places365_selftrained_checkpoints_2026-01-29_09:15:53",
+            "DROPOUT_RATE": 0.16132311787997092,
+            "INPUT_SIZE": 224,
+            "LEARNING_RATE": 0.0011767860480771763,
+            "LOGGING_STEPS": 10,
+            "LOG_DIR": "./lightning_logs_per_epoch/lightning_logs_places365_selftrained_logs_2026-01-29_09:15:53",
+            "LOG_DIR_OPTUNA": "./lightning_logs_optuna/lightning_logs_optuna_places365_selftrained_logs_2026-01-29_09:15:53",
+            "MODELNAME": "places365_selftrained_2026-01-29_09:15:53",
+            "NUM_CLASSES": 150,
+            "NUM_EPOCHS": 250,
+            "NUM_EPOCHS_OPTUNA": 5,
+            "NUM_LAYERS": [
+                2,
+                6,
+                4,
+                5,
+                7,
+                7,
+                15
+            ],
+            "NUM_WORKERS": 4,
+            "N_TRIALS_OPTUNA": 50,
+            "OPTUNA_MAX_TIME": 43200,
+            "PADDING": 4,
+            "PATIENCE": 6,
+            "RUNNAME": "places365_selftrained_runname_2026-01-29_09:15:53",
+            "STUDY_NAME": "places365_selftrained_study_2026-01-29_09:15:53",
+            "STUDY_TYPE": "selftrained",
+            "UNFREEZE_LAYERS": 0,
+            "USED_DATASET": "places365",
+            "WEIGHT_DECAY": 0.06527988576577284
+        },
+        "test_results": {
+            "loss/test_epoch": 2.616060972213745,
+            "acc/test_epoch": 0.35147595405578613
+        }
     }
 ]

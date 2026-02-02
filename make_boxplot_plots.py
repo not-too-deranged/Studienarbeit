@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import json
 
 testscenario_names = ["CIFAR-100_pretrained", "CIFAR-100_selftrained", "cats_pretrained", "cats_selftrained", "places365_pretrained", "places365_selftrained"]
@@ -22,6 +23,9 @@ with open('test_results.json', 'r') as file:
             for entry in testscenario_entries:
                 testresults.append(entry["test_results"][result_boxplot])
 
+            print(f"all results for {scenario}_{result_boxplot}: {testresults}")
+            print(f"test result for {scenario}_{result_boxplot}: min: {min(testresults)}, max: {max(testresults)}, mean: {np.mean(testresults)}")
+
             if len(testresults) != 5:
                 print(f"{result_boxplot} has {len(testresults)} results instead of 5. {scenario}_{required_boxplots_results[f"{result_boxplot}"]} plot was not created.")
             else:
@@ -36,13 +40,15 @@ with open('test_results.json', 'r') as file:
             required_boxplots_hyperparameters.pop("NUM_LAYERS", None)
 
         elif "selftrained" in scenario:
-            required_boxplots_hyperparameters["NUM_LAYERS"] = "Number of layers" #TODO how do you deal with that?
+            required_boxplots_hyperparameters["NUM_LAYERS"] = "Number of layers"
             required_boxplots_hyperparameters.pop("UNFREEZE_LAYERS", None)
 
         for hyperparameter_boxplot in required_boxplots_hyperparameters:
             hyperparameter_results = []
             for entry in testscenario_entries:
                 hyperparameter_results.append(entry["hyperparameters"][hyperparameter_boxplot])
+
+            #print(f"test result for {scenario}_{hyperparameter_boxplot}: min: {min(hyperparameter_results)}, max: {max(hyperparameter_results)}, mean: {np.mean(hyperparameter_results)}")
 
             fig = plt.figure(figsize=(4, 6))
 
